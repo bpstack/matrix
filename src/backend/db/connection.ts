@@ -1,0 +1,30 @@
+import { drizzle } from 'drizzle-orm/better-sqlite3';
+import Database from 'better-sqlite3';
+import { app } from 'electron';
+import path from 'path';
+import fs from 'fs';
+import * as schema from './schema';
+
+let db: ReturnType<typeof drizzle<typeof schema>>;
+
+export function initDb() {
+  if (db) return db;
+
+  const userDataPath = app.getPath('userData');
+  const dataDir = path.join(userDataPath, 'data');
+  fs.mkdirSync(dataDir, { recursive: true });
+
+  const dbPath = path.join(dataDir, 'matrix.db');
+  const sqliteDb = new Database(dbPath);
+
+  sqliteDb.pragma('journal_mode = WAL');
+  sqliteDb.pragma('foreign_keys = ON');
+
+  db = drizzle(sqliteDb, { schema });
+  return db;
+}
+
+export function getDb() {
+  if (!db) throw new Error('Database not initialized. Call initDb() first.');
+  return db;
+}
