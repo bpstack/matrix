@@ -3,7 +3,7 @@
   "productName": "Matrix",
   "version": "1.0.0",
   "description": "Strategic Personal Professional System",
-  "main": ".vite/build/main.js",
+  "main": ".vite/build/index.js",
   "private": true,
   "scripts": {
     "start": "electron-forge start",
@@ -39,8 +39,11 @@
     "vite": "^5.4.21",
     "vitest": "^1.2.0"
   },
+  "pnpm": {
+    "onlyBuiltDependencies": ["better-sqlite3", "electron", "esbuild", "electron-winstaller"]
+  },
   "dependencies": {
-    "better-sqlite3": "^11.0.0",
+    "better-sqlite3": "^12.6.2",
     "drizzle-orm": "^0.29.3",
     "electron-squirrel-startup": "^1.0.1",
     "express": "^4.18.2",

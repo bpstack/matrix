@@ -9,13 +9,13 @@ export function AppShell() {
   const renderContent = () => {
     if (activeTab === 'passwords') {
       return (
-        <div className="flex items-center justify-center h-full text-gray-500">
+        <div className="flex items-center justify-center h-full text-matrix-muted">
           <p className="text-xl">{t('comingSoon', language)}</p>
         </div>
       );
     }
     return (
-      <div className="flex items-center justify-center h-full text-gray-500">
+      <div className="flex items-center justify-center h-full text-matrix-muted">
         <div className="text-center">
           <h2 className="text-2xl font-semibold text-gray-300 mb-2 capitalize">
             {t(activeTab, language)}
@@ -27,7 +27,7 @@ export function AppShell() {
   };
 
   return (
-    <div className="flex h-screen bg-surface-0">
+    <div className="flex h-screen bg-matrix-bg text-gray-200">
       <Sidebar />
       <main className="flex-1 overflow-auto">{renderContent()}</main>
     </div>
