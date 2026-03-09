@@ -3,6 +3,7 @@ import { useSettings, useUpdateSetting } from '../../hooks/useSettings';
 import { useSubscriptions, useCreateSubscription, useUpdateUsage, useDeleteSubscription } from '../../hooks/useSubscriptions';
 import { useUiStore, Theme } from '../../stores/ui.store';
 import { t } from '../../lib/i18n';
+import { apiFetch } from '../../lib/api';
 
 function usageColor(pct: number) {
   if (pct >= 80) return 'bg-red-500';
@@ -159,6 +160,24 @@ export function SettingsView() {
             </div>
           </div>
         )}
+
+        {/* Danger Zone */}
+        <div className="border border-red-900/30 rounded-md p-3 bg-red-950/10">
+          <p className="text-xs text-red-400/70 mb-2">Danger Zone</p>
+          <button
+            onClick={async () => {
+              if (window.confirm(language === 'es' ? '¿Borrar toda la base de datos? Esta acción no se puede deshacer.' : 'Delete entire database? This cannot be undone.')) {
+                if (window.confirm(language === 'es' ? '¿Estás seguro? Todos los datos se perderán.' : 'Are you sure? All data will be lost.')) {
+                  await apiFetch('/db/reset', { method: 'POST' });
+                  window.location.reload();
+                }
+              }
+            }}
+            className="px-3 py-1.5 rounded text-sm bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-colors"
+          >
+            {language === 'es' ? 'Borrar base de datos' : 'Reset Database'}
+          </button>
+        </div>
       </div>
     </div>
   );

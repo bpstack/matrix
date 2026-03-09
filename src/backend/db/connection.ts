@@ -4,7 +4,8 @@ import path from 'path';
 import fs from 'fs';
 import * as schema from './schema';
 
-let db: ReturnType<typeof drizzle<typeof schema>>;
+let db: ReturnType<typeof drizzle<typeof schema>> | undefined;
+let sqliteDb: any;
 
 export function initDb() {
   if (db) return db;
@@ -20,7 +21,7 @@ export function initDb() {
     : require('better-sqlite3');
 
   const dbPath = path.join(dataDir, 'matrix.db');
-  const sqliteDb = new Database(dbPath);
+  sqliteDb = new Database(dbPath);
 
   sqliteDb.pragma('journal_mode = WAL');
   sqliteDb.pragma('foreign_keys = ON');
@@ -32,4 +33,17 @@ export function initDb() {
 export function getDb() {
   if (!db) throw new Error('Database not initialized. Call initDb() first.');
   return db;
+}
+
+export function getDbPath() {
+  const userDataPath = app.getPath('userData');
+  return path.join(userDataPath, 'data', 'matrix.db');
+}
+
+export function closeDb() {
+  if (sqliteDb) {
+    sqliteDb.close();
+    sqliteDb = undefined;
+    db = undefined;
+  }
 }
