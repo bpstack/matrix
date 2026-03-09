@@ -3,15 +3,25 @@ import { useMission, useCreateMission, useUpdateMission, useDeleteMission } from
 import { useObjectives, useCreateObjective, useUpdateObjective, useDeleteObjective } from '../../hooks/useObjectives';
 import { usePlans, useCreatePlan, useUpdatePlan, useDeletePlan } from '../../hooks/usePlans';
 import { useTasks, useCreateTask, useUpdateTask, useDeleteTask } from '../../hooks/useTasks';
+import { useProjects } from '../../hooks/useProjects';
+import { useCreateIdea } from '../../hooks/useIdeas';
+import { useStats } from '../../hooks/useStats';
+import { useActivity } from '../../hooks/useActivity';
 import { useUiStore } from '../../stores/ui.store';
-import { t } from '../../lib/i18n';
+import { t, LangKey } from '../../lib/i18n';
 
 /* ── Shared ── */
+
+function progressColor(value: number): string {
+  if (value <= 33) return 'bg-red-500';
+  if (value <= 66) return 'bg-amber-500';
+  return 'bg-green-500';
+}
 
 function ProgressBar({ value, className = '' }: { value: number; className?: string }) {
   return (
     <div className={`w-full bg-matrix-border/50 rounded-full h-1 ${className}`}>
-      <div className="bg-matrix-accent h-1 rounded-full transition-all duration-300" style={{ width: `${value}%` }} />
+      <div className={`${progressColor(value)} h-1 rounded-full transition-all duration-300`} style={{ width: `${value}%` }} />
     </div>
   );
 }
@@ -393,7 +403,7 @@ function StrategicSchemaActive() {
   return (
     <div>
       {/* Mission */}
-      <div className="group flex items-center justify-between mb-1">
+      <div className="group flex items-center justify-between mb-1 border-l-2 border-matrix-accent pl-2">
         {editing === 'mission' ? (
           <InlineEdit value={mission.title} onSave={title => { updateMission.mutate({ id: mission.id, title }); setEditing(null); }} onCancel={() => setEditing(null)} />
         ) : (
@@ -441,7 +451,7 @@ function StrategicSchemaActive() {
                 </div>
                 <div className="flex flex-col items-end gap-0.5">
                   <div className="w-12"><ProgressBar value={obj.progress} /></div>
-                  <span className="text-[10px] text-matrix-muted/40">Objetivo {idx + 1}</span>
+                  <span className="text-[10px] text-gray-500">Objetivo {idx + 1}</span>
                 </div>
                 <span className="text-[10px] font-mono text-matrix-muted/60 ml-1">{obj.progress}%</span>
                 <ActionButtons
@@ -451,7 +461,7 @@ function StrategicSchemaActive() {
                 />
               </div>
               {expandedObj === obj.id && (
-                <div className="px-3 pb-2 pt-1 border-t border-matrix-border/30">
+                <div className="px-3 pb-2 pt-1 border-t border-matrix-border/30 transition-all duration-300">
                   <div className="ml-3 space-y-1">
                     {plans?.map((plan, planIdx) => {
                       const planKey = `plan-${plan.id}`;
@@ -466,7 +476,7 @@ function StrategicSchemaActive() {
                             )}
                             <div className="flex flex-col items-end gap-0.5">
                               <div className="w-10"><ProgressBar value={plan.progress} /></div>
-                              <span className="text-[9px] text-matrix-muted/40">Plan {planIdx + 1}</span>
+                              <span className="text-[9px] text-gray-500">Plan {planIdx + 1}</span>
                             </div>
                             <span className="text-[10px] font-mono text-matrix-muted/60 ml-1">{plan.progress}%</span>
                             <ActionButtons
@@ -502,7 +512,7 @@ function StrategicSchemaActive() {
                                   <input value={newTaskTitle} onChange={e => setNewTaskTitle(e.target.value)} placeholder="Task..." autoFocus onBlur={() => !newTaskTitle.trim() && setAddingTask(false)} className={inlineCls} />
                                 </form>
                               ) : (
-                                <button onClick={() => setAddingTask(true)} className="text-xs text-matrix-muted/40 hover:text-matrix-accent transition-colors ml-1 mt-0.5">+ task</button>
+                                <button onClick={() => setAddingTask(true)} className="text-xs text-gray-500 hover:text-matrix-accent transition-colors ml-1 mt-0.5">+ task</button>
                               )}
                             </div>
                           )}
@@ -514,7 +524,7 @@ function StrategicSchemaActive() {
                         <input value={newPlanTitle} onChange={e => setNewPlanTitle(e.target.value)} placeholder="Plan..." autoFocus onBlur={() => !newPlanTitle.trim() && setAddingPlan(false)} className={inlineCls} />
                       </form>
                     ) : (
-                      <button onClick={() => setAddingPlan(true)} className="text-xs text-matrix-muted/40 hover:text-matrix-accent transition-colors mt-0.5">+ plan</button>
+                      <button onClick={() => setAddingPlan(true)} className="text-xs text-gray-500 hover:text-matrix-accent transition-colors mt-0.5">+ plan</button>
                     )}
                   </div>
                 </div>
@@ -532,10 +542,418 @@ function StrategicSchemaActive() {
             </div>
           </form>
         ) : (
-          <button onClick={() => setAddingObj(true)} className="text-xs text-matrix-muted/40 hover:text-matrix-accent transition-colors">+ objective</button>
+          <button onClick={() => setAddingObj(true)} className="text-xs text-gray-500 hover:text-matrix-accent transition-colors">+ objective</button>
         )}
       </div>
     </div>
+  );
+}
+
+/* ── Time ago helper ── */
+
+function timeAgo(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
+}
+
+const activityIcons: Record<string, string> = {
+  created: '+',
+  completed: '✓',
+  promoted: '↑',
+  scanned: '⟲',
+  deleted: '✕',
+  decided: '⚖',
+};
+
+/* ── Dashboard Cards ── */
+
+function StatsCard({ language }: { language: 'en' | 'es' }) {
+  const { data: stats } = useStats();
+  if (!stats) return null;
+  const items = [
+    { label: t('tasks' as LangKey, language), value: `${stats.completedTasks}/${stats.totalTasks}`, sub: stats.totalTasks > 0 },
+    { label: t('activePlans' as LangKey, language), value: String(stats.activePlans) },
+    { label: t('pendingIdeas' as LangKey, language), value: String(stats.pendingIdeas) },
+    { label: t('completionRate' as LangKey, language), value: `${stats.completionRate}%` },
+  ];
+  return (
+    <SectionCard title={t('globalStats' as LangKey, language)} icon="◪">
+      <div className="grid grid-cols-2 gap-3">
+        {items.map(item => (
+          <div key={item.label} className="text-center">
+            <p className="text-lg font-semibold text-gray-200">{item.value}</p>
+            <p className="text-[10px] text-matrix-muted">{item.label}</p>
+          </div>
+        ))}
+      </div>
+      {stats.totalTasks > 0 && (
+        <div className="mt-3">
+          <ProgressBar value={stats.completionRate} />
+        </div>
+      )}
+    </SectionCard>
+  );
+}
+
+function ActiveProjectsCard({ language }: { language: 'en' | 'es' }) {
+  const { data: allProjects } = useProjects();
+  const { setActiveTab } = useUiStore();
+  const active = (allProjects || []).filter((p: any) => p.status === 'active').slice(0, 5);
+  return (
+    <SectionCard title={t('activeProjects' as LangKey, language)} icon="◫">
+      {active.length === 0 ? (
+        <p className="text-xs text-matrix-muted py-4 text-center">{t('noProjects' as LangKey, language)}</p>
+      ) : (
+        <div className="space-y-2">
+          {active.map((p: any) => (
+            <button key={p.id} onClick={() => setActiveTab('projects')} className="w-full flex items-center gap-2 text-left hover:bg-white/[0.02] rounded px-1 py-1 transition-colors">
+              <span className="text-sm text-gray-300 flex-1 truncate">{p.name}</span>
+              <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${p.status === 'active' ? 'bg-green-500/10 text-green-400' : 'bg-matrix-border/50 text-matrix-muted'}`}>{p.status}</span>
+              {p.scan && (
+                <div className="w-12">
+                  <ProgressBar value={p.scan.progressPercent} />
+                </div>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
+    </SectionCard>
+  );
+}
+
+function RecentActivityCard({ language }: { language: 'en' | 'es' }) {
+  const { data: activity } = useActivity(10);
+  return (
+    <SectionCard title={t('recentActivity' as LangKey, language)} icon="⟲">
+      {!activity || activity.length === 0 ? (
+        <p className="text-xs text-matrix-muted py-4 text-center">{t('noActivity' as LangKey, language)}</p>
+      ) : (
+        <div className="space-y-1 max-h-48 overflow-y-auto">
+          {activity.map(a => (
+            <div key={a.id} className="flex items-start gap-2 py-1 text-xs">
+              <span className="text-matrix-accent shrink-0 w-3 text-center">{activityIcons[a.action] || '•'}</span>
+              <span className="text-gray-400 flex-1 truncate">{a.description}</span>
+              <span className="text-matrix-muted/50 shrink-0">{timeAgo(a.createdAt)}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </SectionCard>
+  );
+}
+
+function QuickCaptureCard({ language }: { language: 'en' | 'es' }) {
+  const [mode, setMode] = useState<'idea' | 'task'>('idea');
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [planId, setPlanId] = useState<number | ''>('');
+  const [saved, setSaved] = useState(false);
+
+  const createIdea = useCreateIdea();
+  const createTask = useCreateTask();
+  const { data: plans } = usePlans();
+
+  const handleSave = () => {
+    if (!title.trim()) return;
+    if (mode === 'idea') {
+      createIdea.mutate({ title: title.trim(), description: description.trim() || undefined });
+    } else {
+      if (!planId) return;
+      createTask.mutate({ planId: Number(planId), title: title.trim() });
+    }
+    setTitle('');
+    setDescription('');
+    setPlanId('');
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
+
+  const inputCls = 'w-full bg-matrix-bg border border-matrix-border rounded px-2 py-1.5 text-sm text-gray-300 placeholder-gray-600 focus:outline-none focus:border-matrix-accent/60 transition-colors';
+
+  return (
+    <SectionCard title={t('quickCapture' as LangKey, language)} icon="✦">
+      <div className="space-y-2">
+        <div className="flex gap-1">
+          {(['idea', 'task'] as const).map(m => (
+            <button key={m} onClick={() => setMode(m)} className={`text-xs px-3 py-1 rounded transition-colors ${mode === m ? 'bg-matrix-accent/10 text-matrix-accent' : 'text-matrix-muted hover:text-gray-300'}`}>
+              {t(m as LangKey, language)}
+            </button>
+          ))}
+        </div>
+        {mode === 'task' && plans && (
+          <select value={planId} onChange={e => setPlanId(e.target.value ? Number(e.target.value) : '')} className={inputCls}>
+            <option value="">{t('selectPlan' as LangKey, language)}</option>
+            {plans.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}
+          </select>
+        )}
+        <input value={title} onChange={e => setTitle(e.target.value)} placeholder={mode === 'idea' ? 'Idea title...' : t('taskTitle' as LangKey, language)} className={inputCls} onKeyDown={e => e.key === 'Enter' && handleSave()} />
+        {mode === 'idea' && (
+          <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="Description (optional)..." rows={2} className={`${inputCls} resize-none`} />
+        )}
+        <div className="flex items-center gap-2">
+          <button onClick={handleSave} disabled={!title.trim() || (mode === 'task' && !planId)} className="text-xs px-3 py-1.5 bg-matrix-accent/10 text-matrix-accent rounded hover:bg-matrix-accent/20 transition-colors disabled:opacity-50">
+            {t('create' as LangKey, language)}
+          </button>
+          {saved && <span className="text-xs text-green-400">{t('saved' as LangKey, language)} ✓</span>}
+        </div>
+      </div>
+    </SectionCard>
+  );
+}
+
+/* ── Objectives at a Glance ── */
+
+function ObjectivesGlanceCard({ language }: { language: 'en' | 'es' }) {
+  const { data: missions } = useMission();
+  const mission = missions?.[0];
+  const { data: objectives } = useObjectives(mission?.id);
+
+  return (
+    <SectionCard title={language === 'es' ? 'Objetivos' : 'Objectives at a Glance'} icon="◎">
+      {!objectives || objectives.length === 0 ? (
+        <p className="text-xs text-matrix-muted py-4 text-center">{language === 'es' ? 'Sin objetivos' : 'No objectives yet'}</p>
+      ) : (
+        <div className="space-y-2.5">
+          {objectives.map(obj => (
+            <div key={obj.id}>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs text-gray-300 truncate flex-1">{obj.title}</span>
+                <span className="text-[10px] font-mono text-matrix-muted ml-2">{obj.progress}%</span>
+              </div>
+              <ProgressBar value={obj.progress} />
+            </div>
+          ))}
+        </div>
+      )}
+    </SectionCard>
+  );
+}
+
+/* ── Focus Queue (top priority tasks) ── */
+
+function FocusQueueCard({ language }: { language: 'en' | 'es' }) {
+  const { data: allTasks } = useTasks();
+  const updateTask = useUpdateTask();
+
+  const statusIcon: Record<string, string> = { pending: '○', in_progress: '◐', done: '●' };
+  const statusColor: Record<string, string> = { pending: 'text-gray-500', in_progress: 'text-matrix-warning', done: 'text-matrix-success' };
+  const nextStatus: Record<string, string> = { pending: 'in_progress', in_progress: 'done', done: 'pending' };
+  const prioOrder: Record<string, number> = { urgent: 0, high: 1, medium: 2, low: 3 };
+  const prioDot: Record<string, string> = { low: 'bg-gray-500', medium: 'bg-blue-400', high: 'bg-orange-400', urgent: 'bg-red-400' };
+
+  const focusTasks = [...(allTasks || [])]
+    .filter(t => t.status !== 'done')
+    .sort((a, b) => (prioOrder[a.priority] ?? 9) - (prioOrder[b.priority] ?? 9))
+    .slice(0, 6);
+
+  return (
+    <SectionCard title={language === 'es' ? 'Cola de enfoque' : 'Focus Queue'} icon="▸">
+      {focusTasks.length === 0 ? (
+        <p className="text-xs text-matrix-muted py-4 text-center">{language === 'es' ? 'Sin tareas pendientes' : 'All clear!'}</p>
+      ) : (
+        <div className="space-y-1">
+          {focusTasks.map(task => (
+            <div key={task.id} className="flex items-center gap-2 py-1 group">
+              <button onClick={() => updateTask.mutate({ id: task.id, status: nextStatus[task.status] })} className={`text-xs ${statusColor[task.status]}`}>{statusIcon[task.status]}</button>
+              <span className="text-sm text-gray-300 flex-1 truncate">{task.title}</span>
+              <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${prioDot[task.priority]}`} />
+            </div>
+          ))}
+        </div>
+      )}
+    </SectionCard>
+  );
+}
+
+/* ── Upcoming Deadlines ── */
+
+function UpcomingDeadlinesCard({ language }: { language: 'en' | 'es' }) {
+  const { data: allTasks } = useTasks();
+
+  const tasksWithDeadline = [...(allTasks || [])]
+    .filter(t => t.deadline && t.status !== 'done')
+    .sort((a, b) => (a.deadline || '').localeCompare(b.deadline || ''))
+    .slice(0, 5);
+
+  const daysLeft = (d: string) => {
+    const diff = Math.ceil((new Date(d).getTime() - Date.now()) / 86400000);
+    return diff;
+  };
+  const daysColor = (d: number) => d <= 1 ? 'text-red-400' : d <= 3 ? 'text-orange-400' : d <= 7 ? 'text-amber-400' : 'text-gray-500';
+
+  // If no real deadlines, show mock data
+  const mockDeadlines = [
+    { title: 'API contracts finalization', deadline: '2026-03-12', dLeft: 3 },
+    { title: 'Design review sprint 4', deadline: '2026-03-14', dLeft: 5 },
+    { title: 'Staging deployment', deadline: '2026-03-16', dLeft: 7 },
+    { title: 'Documentation update', deadline: '2026-03-20', dLeft: 11 },
+  ];
+
+  const hasReal = tasksWithDeadline.length > 0;
+  const items = hasReal
+    ? tasksWithDeadline.map(t => ({ title: t.title, dLeft: daysLeft(t.deadline!) }))
+    : mockDeadlines.map(m => ({ title: m.title, dLeft: m.dLeft }));
+
+  return (
+    <SectionCard title={language === 'es' ? 'Próximos vencimientos' : 'Upcoming Deadlines'} icon="⏰">
+      {!hasReal && <p className="text-[10px] text-matrix-muted/50 mb-2 italic">Sample data</p>}
+      <div className="space-y-1.5">
+        {items.map((item, i) => (
+          <div key={i} className="flex items-center gap-2 text-xs">
+            <span className={`${daysColor(item.dLeft)} font-mono text-[10px] w-7 text-right shrink-0`}>
+              {item.dLeft <= 0 ? 'today' : `${item.dLeft}d`}
+            </span>
+            <span className="text-gray-400 flex-1 truncate">{item.title}</span>
+          </div>
+        ))}
+      </div>
+    </SectionCard>
+  );
+}
+
+/* ── Weekly Heatmap ── */
+
+function WeeklyHeatmapCard({ language }: { language: 'en' | 'es' }) {
+  const { data: activity } = useActivity(50);
+
+  // Build heatmap from real activity data (last 4 weeks)
+  const now = Date.now();
+  const dayLabels = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
+  const weeks = 4;
+  const grid: number[][] = Array.from({ length: weeks }, () => Array(7).fill(0));
+
+  for (const a of activity || []) {
+    const diff = Math.floor((now - new Date(a.createdAt).getTime()) / 86400000);
+    if (diff >= 0 && diff < weeks * 7) {
+      const weekIdx = Math.floor(diff / 7);
+      const dayIdx = 6 - (diff % 7); // reverse so recent is right
+      if (weekIdx < weeks && dayIdx >= 0) grid[weeks - 1 - weekIdx][dayIdx]++;
+    }
+  }
+
+  // If no real data, use mock heatmap
+  const hasData = (activity || []).length > 0;
+  const mockGrid = [
+    [1, 3, 2, 0, 4, 1, 0],
+    [2, 1, 5, 3, 2, 0, 0],
+    [0, 4, 3, 2, 1, 3, 1],
+    [3, 2, 1, 4, 5, 2, 0],
+  ];
+  const displayGrid = hasData ? grid : mockGrid;
+
+  const maxVal = Math.max(...displayGrid.flat(), 1);
+  const cellColor = (v: number) => {
+    if (v === 0) return 'bg-matrix-border/30';
+    const intensity = v / maxVal;
+    if (intensity <= 0.33) return 'bg-matrix-accent/20';
+    if (intensity <= 0.66) return 'bg-matrix-accent/50';
+    return 'bg-matrix-accent/80';
+  };
+
+  return (
+    <SectionCard title={language === 'es' ? 'Actividad semanal' : 'Activity Heatmap'} icon="▦">
+      {!hasData && <p className="text-[10px] text-matrix-muted/50 mb-2 italic">Sample data</p>}
+      <div className="space-y-1">
+        {displayGrid.map((week, wi) => (
+          <div key={wi} className="flex gap-1">
+            {week.map((val, di) => (
+              <div key={di} className={`flex-1 h-4 rounded-sm ${cellColor(val)} transition-colors`} title={`${val} actions`} />
+            ))}
+          </div>
+        ))}
+        <div className="flex gap-1 mt-0.5">
+          {dayLabels.map((d, i) => (
+            <span key={i} className="flex-1 text-center text-[9px] text-matrix-muted">{d}</span>
+          ))}
+        </div>
+      </div>
+      <div className="flex items-center gap-1.5 mt-2 justify-end">
+        <span className="text-[9px] text-matrix-muted">{language === 'es' ? 'Menos' : 'Less'}</span>
+        {[0, 0.25, 0.5, 0.8].map((v, i) => (
+          <div key={i} className={`w-3 h-3 rounded-sm ${v === 0 ? 'bg-matrix-border/30' : v <= 0.33 ? 'bg-matrix-accent/20' : v <= 0.66 ? 'bg-matrix-accent/50' : 'bg-matrix-accent/80'}`} />
+        ))}
+        <span className="text-[9px] text-matrix-muted">{language === 'es' ? 'Más' : 'More'}</span>
+      </div>
+    </SectionCard>
+  );
+}
+
+/* ── Task Distribution Mini ── */
+
+function TaskDistributionCard({ language }: { language: 'en' | 'es' }) {
+  const { data: allTasks } = useTasks();
+
+  const counts: Record<string, number> = { pending: 0, in_progress: 0, done: 0 };
+  for (const t of allTasks || []) {
+    counts[t.status] = (counts[t.status] || 0) + 1;
+  }
+  const total = Object.values(counts).reduce((s, v) => s + v, 0);
+
+  const bars = [
+    { key: 'done', label: language === 'es' ? 'Hecho' : 'Done', color: 'bg-green-500', count: counts.done },
+    { key: 'in_progress', label: language === 'es' ? 'En progreso' : 'In Progress', color: 'bg-amber-500', count: counts.in_progress },
+    { key: 'pending', label: language === 'es' ? 'Pendiente' : 'Pending', color: 'bg-gray-500', count: counts.pending },
+
+  ];
+
+  return (
+    <SectionCard title={language === 'es' ? 'Distribución de tareas' : 'Task Breakdown'} icon="◔">
+      {total === 0 ? (
+        <p className="text-xs text-matrix-muted py-4 text-center">{t('noTasks' as LangKey, language)}</p>
+      ) : (
+        <div className="space-y-2">
+          {/* Stacked bar */}
+          <div className="flex h-3 rounded-full overflow-hidden">
+            {bars.filter(b => b.count > 0).map(b => (
+              <div key={b.key} className={`${b.color}/70`} style={{ width: `${(b.count / total) * 100}%` }} />
+            ))}
+          </div>
+          {/* Legend */}
+          <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+            {bars.map(b => (
+              <div key={b.key} className="flex items-center gap-1.5 text-xs">
+                <span className={`w-2 h-2 rounded-full ${b.color}/70`} />
+                <span className="text-gray-400 flex-1">{b.label}</span>
+                <span className="text-matrix-muted font-mono text-[10px]">{b.count}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </SectionCard>
+  );
+}
+
+/* ── Notes / Scratchpad ── */
+
+function ScratchpadCard({ language }: { language: 'en' | 'es' }) {
+  const [notes, setNotes] = useState(() => {
+    try { return localStorage.getItem('matrix-scratchpad') || ''; } catch { return ''; }
+  });
+
+  const handleChange = (val: string) => {
+    setNotes(val);
+    try { localStorage.setItem('matrix-scratchpad', val); } catch { /* ignore */ }
+  };
+
+  return (
+    <SectionCard title={language === 'es' ? 'Bloc de notas' : 'Scratchpad'} icon="✏">
+      <textarea
+        value={notes}
+        onChange={e => handleChange(e.target.value)}
+        placeholder={language === 'es' ? 'Escribe notas rápidas aquí...' : 'Quick notes, reminders, ideas...'}
+        rows={5}
+        className="w-full bg-matrix-bg border border-matrix-border rounded px-2 py-1.5 text-sm text-gray-300 placeholder-gray-600 focus:outline-none focus:border-matrix-accent/60 transition-colors resize-none"
+      />
+      <p className="text-[10px] text-gray-500 mt-1 text-right">{language === 'es' ? 'Guardado localmente' : 'Saved locally'}</p>
+    </SectionCard>
   );
 }
 
@@ -549,18 +967,43 @@ export function OverviewView() {
   if (isLoading) return <div className="p-4 text-matrix-muted text-sm">{t('loading', language)}</div>;
 
   return (
-    <div className="p-4 space-y-4 max-w-5xl">
+    <div className="p-4 space-y-4">
       <h1 className="text-lg font-medium text-gray-200">{t('overview', language)}</h1>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="lg:col-span-2">
+      {/* Top row: Schema left, side cards right */}
+      <div className="flex gap-4">
+        {/* Left: Strategic Schema + bottom cards */}
+        <div className="flex-1 min-w-0 space-y-4">
           <SectionCard title="Strategic Schema" icon="◈">
             {mission ? <StrategicSchemaActive /> : <StrategicSchemaSetup />}
           </SectionCard>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <StatsCard language={language} />
+            <ActiveProjectsCard language={language} />
+            <RecentActivityCard language={language} />
+            <QuickCaptureCard language={language} />
+          </div>
         </div>
-        <ComingSoonCard title={t('projects', language)} icon="◫" description="Project scanner & progress tracking" />
-        <ComingSoonCard title="Statistics" icon="◪" description="Charts, burndown & completion rates" />
-        <ComingSoonCard title={t('passwords', language)} icon="◩" description="Encrypted password vault" />
+
+        {/* Right column: visible on xl+ */}
+        <div className="hidden xl:flex flex-col gap-4 w-80 shrink-0">
+          <ObjectivesGlanceCard language={language} />
+          <FocusQueueCard language={language} />
+          <TaskDistributionCard language={language} />
+          <WeeklyHeatmapCard language={language} />
+          <UpcomingDeadlinesCard language={language} />
+          <ScratchpadCard language={language} />
+        </div>
+      </div>
+
+      {/* Show right-column cards below on smaller screens */}
+      <div className="xl:hidden grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <ObjectivesGlanceCard language={language} />
+        <FocusQueueCard language={language} />
+        <TaskDistributionCard language={language} />
+        <WeeklyHeatmapCard language={language} />
+        <UpcomingDeadlinesCard language={language} />
+        <ScratchpadCard language={language} />
       </div>
     </div>
   );
