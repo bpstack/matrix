@@ -1,4 +1,4 @@
-import { app, BrowserWindow, session } from 'electron';
+import { app, BrowserWindow, session, Menu, ipcMain } from 'electron';
 import path from 'node:path';
 import fs from 'node:fs';
 import started from 'electron-squirrel-startup';
@@ -36,13 +36,83 @@ function configureCSP(): void {
   });
 }
 
+function sendTheme(theme: string) {
+  if (mainWindow) {
+    mainWindow.webContents.send('set-theme', theme);
+    if (theme === 'light') {
+      mainWindow.setBackgroundColor('#f5f5f5');
+    } else {
+      mainWindow.setBackgroundColor('#111111');
+    }
+  }
+}
+
+function buildMenu(): void {
+  const template: Electron.MenuItemConstructorOptions[] = [
+    { role: 'fileMenu' },
+    { role: 'editMenu' },
+    {
+      label: 'View',
+      submenu: [
+        {
+          label: 'Theme',
+          submenu: [
+            {
+              label: 'Dark',
+              type: 'radio',
+              checked: true,
+              click: () => sendTheme('dark'),
+            },
+            {
+              label: 'Light',
+              type: 'radio',
+              click: () => sendTheme('light'),
+            },
+          ],
+        },
+        { type: 'separator' },
+        { role: 'reload' },
+        { role: 'forceReload' },
+        { role: 'toggleDevTools' },
+        { type: 'separator' },
+        { role: 'resetZoom' },
+        { role: 'zoomIn' },
+        { role: 'zoomOut' },
+        { type: 'separator' },
+        { role: 'togglefullscreen' },
+      ],
+    },
+    { role: 'windowMenu' },
+    {
+      label: 'Help',
+      submenu: [
+        {
+          label: 'About Matrix',
+          click: () => {
+            const { dialog } = require('electron');
+            dialog.showMessageBox({ message: 'Matrix — Strategic Personal Professional System', type: 'info' });
+          },
+        },
+      ],
+    },
+  ];
+
+  const menu = Menu.buildFromTemplate(template);
+  Menu.setApplicationMenu(menu);
+}
+
 const createWindow = (): void => {
+  const iconPath = app.isPackaged
+    ? path.join(process.resourcesPath, 'assets', 'icon.ico')
+    : path.join(__dirname, '../../assets/icon.ico');
+
   mainWindow = new BrowserWindow({
     width: 1280,
     height: 800,
     minWidth: 900,
     minHeight: 600,
     title: 'Matrix',
+    icon: iconPath,
     backgroundColor: '#111111',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -69,6 +139,7 @@ app.on('ready', () => {
   configureCSP();
   initDb();
   runMigrations();
+  buildMenu();
 
   server = expressApp.listen(API_PORT, () => {
     console.log(`[Matrix] API running on http://localhost:${API_PORT}`);

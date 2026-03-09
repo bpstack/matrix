@@ -6,15 +6,15 @@ module.exports = {
     extend: {
       colors: {
         matrix: {
-          bg: '#111111',
-          surface: '#191919',
-          border: '#2a2a2a',
-          accent: '#f0a500',
-          'accent-hover': '#ffb800',
-          success: '#3ba55d',
-          warning: '#f0a500',
-          danger: '#ed4245',
-          muted: '#777777',
+          bg: 'rgb(var(--matrix-bg) / <alpha-value>)',
+          surface: 'rgb(var(--matrix-surface) / <alpha-value>)',
+          border: 'rgb(var(--matrix-border) / <alpha-value>)',
+          accent: 'rgb(var(--matrix-accent) / <alpha-value>)',
+          'accent-hover': 'rgb(var(--matrix-accent-hover) / <alpha-value>)',
+          success: 'rgb(var(--matrix-success) / <alpha-value>)',
+          warning: 'rgb(var(--matrix-warning) / <alpha-value>)',
+          danger: 'rgb(var(--matrix-danger) / <alpha-value>)',
+          muted: 'rgb(var(--matrix-muted) / <alpha-value>)',
         },
       },
       fontFamily: {

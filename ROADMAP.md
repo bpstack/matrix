@@ -11,7 +11,7 @@
 - React 18 + Tailwind 3.4 dark theme (Poppins font, golden accent)
 - Express on :3939 with health check (`/api/health`)
 - SQLite + Drizzle ORM (8 tables: mission, objectives, plans, tasks, projects, project_links, ideas, settings)
-- AppShell with sidebar (6 tabs: Overview, Projects, Tasks, Ideas, Passwords, Settings)
+- AppShell with sidebar (6 tabs: Overview, Projects, Tasks, Ideas, Analytics, Settings)
 - Preload with `window.matrix.apiBase` via contextBridge
 - i18n dictionary (EN/ES)
 
@@ -245,100 +245,246 @@ Projects:
 
 ---
 
-## Phase 3: Ideas Pipeline — Captura, evaluación y promoción
+## Phase 3: Ideas Pipeline + AI Budget ✅
 
-Sistema para capturar ideas rápidamente y decidir si merecen convertirse en algo accionable.
+Sistema de captura, evaluación y promoción de ideas con Kanban visual. Incluye tracking de presupuesto AI (adelantado de Phase 6).
 
-### 3.1 UI: Kanban de 4 columnas
-Inspirado en matrix-v2, la vista de Ideas es un **pipeline visual**:
+### 3.1 Schema & Migration Updates ✅
+- ✅ `ideas`: añadidos `target_type` TEXT (mission|objective|plan|task|null), `target_id` INTEGER (nullable), `project_id` INTEGER (nullable, FK → projects)
+- ✅ Nueva tabla `idea_evaluations`: id, idea_id (FK unique 1:1), alignment_score (1-10), impact_score (1-10), cost_score (1-10), risk_score (1-10), total_score REAL, reasoning TEXT, decision (pending|approved|rejected), decided_at, created_at
+- ✅ Nueva tabla `subscriptions` (AI Budget): id, name, cycle (weekly|monthly), reset_day INTEGER, budget INTEGER (default 100, %), current_used INTEGER (default 0, %), updated_at
+- ✅ Migración: ALTER TABLE ideas + CREATE TABLE idea_evaluations + CREATE TABLE subscriptions
+- ✅ Migración correctiva: scores antiguos en rango 0-1 multiplicados x10 a rango 1-10
 
-| Pending | Evaluating | Approved | Rejected |
-|---------|------------|----------|----------|
-| Ideas recién capturadas | En proceso de evaluación | Aprobadas / promovidas | Descartadas |
+### 3.2 Ideas CRUD + Evaluations + Promotion ✅
+- ✅ CRUD completo con filtro por status + vinculación a schema estratégico y proyecto
+- ✅ POST `/api/ideas/:id/evaluate` — crear/actualizar evaluación (4 sliders manuales)
+- ✅ GET `/api/ideas/:id/evaluation` — obtener evaluación
+- ✅ PATCH `/api/ideas/:id/decide` — aprobar/rechazar (cambia status de idea)
+- ✅ POST `/api/ideas/:id/promote` — body: { type, parent_id } → crea entidad destino, actualiza promoted_to_type/id, status='promoted'
+- ✅ Repository: `ideas.repository.ts` — findAll, findByStatus, findById, create, update, delete, findEvaluation, upsertEvaluation, updateEvaluationDecision
+- ✅ Controller: `ideas.controller.ts` — validación Zod, scoring, promote logic
+- ✅ Routes: `ideas.routes.ts` — 9 endpoints
 
-- Cada card muestra: título, descripción (truncada), proyecto vinculado (opcional), fecha
-- Click en card → expande detalle
-- Acciones por columna:
-  - **Pending**: Evaluar, Eliminar
-  - **Evaluating**: Ver evaluación, Aprobar, Rechazar, Eliminar
-  - **Approved**: Ver a qué se promovió (link a task/plan/objective)
-  - **Rejected**: Restaurar a Pending, Eliminar
-
-### 3.2 Captura rápida de ideas
-- Formulario simple: título (requerido), descripción (opcional), proyecto vinculado (select, opcional)
-- Objetivo: capturar con fricción mínima, evaluar después
-- Status inicial: `pending`
-
-### 3.3 Evaluación de ideas
-Sistema de scoring para decidir si una idea merece acción:
-
-**Scores (1-10):**
-- **Alignment** (alineación con misión/objetivos) — auto-calculado
-- **Impact** (impacto potencial) — auto-calculado
-- **Cost** (coste estimado, menor = mejor) — ajustable manualmente
-- **Risk** (riesgo, menor = mejor) — ajustable manualmente
-
-**Fórmula de scoring:**
+**Fórmula de scoring (rango 1-10):**
 ```
-totalScore = (alignment × 0.4 + impact × 0.3 + (10 - cost) × 0.15 + (10 - risk) × 0.15) / 10
+totalScore = alignment × 0.4 + impact × 0.3 + (10 - cost) × 0.15 + (10 - risk) × 0.15
 ```
 
-**Motor de scoring local (Phase 3):**
-- Tokeniza título + descripción de la idea
-- Compara semánticamente contra objetivos y planes existentes
-- Calcula alignment e impact basándose en coincidencias
-- Sin dependencia de AI — funciona 100% offline
+**Decisiones simplificadas vs roadmap original:**
+- ✅ Los 4 scores son sliders manuales (sin auto-cálculo NLP)
+- ✅ Ideas se vinculan opcionalmente al schema estratégico (target_type + target_id) Y a un proyecto (project_id)
 
-**Panel de evaluación:**
-- Barras visuales para cada score
-- Sliders para ajustar Cost y Risk manualmente
-- Razonamiento generado (texto explicativo)
-- Botones: Aprobar → Promover, Rechazar
+### 3.3 Subscriptions CRUD (AI Budget) ✅
+- ✅ CRUD + PATCH `/api/subscriptions/:id/usage` (actualizar current_used)
+- ✅ Tracking de suscripciones AI: nombre, ciclo, % presupuesto usado
+- ✅ Repository: `subscriptions.repository.ts` — findAll, findById, create, update, delete
+- ✅ Controller: `subscriptions.controller.ts` — validación Zod, usage endpoint
+- ✅ Routes: `subscriptions.routes.ts` — 5 endpoints
 
-### 3.4 Promoción de ideas (TODO: definir flujo)
-Cuando una idea se aprueba, ¿a qué se convierte? Opciones a definir:
+### 3.4 UI: Kanban de Ideas ✅
+4 columnas: **Pending → Evaluating → Approved → Rejected**
 
-- **→ Task**: La idea se convierte en una tarea concreta dentro de un plan existente
-- **→ Plan**: La idea genera un nuevo plan dentro de un objetivo
-- **→ Objective**: La idea es tan grande que merece un nuevo objetivo
-- **→ Project**: La idea da origen a un proyecto nuevo (como en matrix-v2)
+- ✅ **Card de idea**: título, descripción truncada, badges (target, proyecto, promoted_to), fecha
+- ✅ **Scores en la card**: Alineación, Impacto, Coste, Riesgo con valores + total score (visible para ideas evaluadas)
+- ✅ **Labels responsive**: palabra completa en `xl`, abreviatura (ALI, IMP, CST, RSK) en ventanas más pequeñas
+- ✅ **Acciones como iconos** siempre visibles con tooltip descriptivo al hover (bilingüe EN/ES)
+- ✅ **Navegación entre estados**: cada idea puede retroceder al estado anterior o volver a pending desde cualquier columna
+- ✅ **Formulario de captura** (modal): título, descripción, selector jerárquico de schema (tipo → entidad), selector de proyecto
+- ✅ **Panel de evaluación** (modal): 4 sliders 1-10, score total en tiempo real, reasoning, botones aprobar/rechazar/guardar
+- ✅ **Pre-carga de evaluación**: al editar, los sliders se cargan con los valores previamente guardados
+- ✅ **Modal de promoción**: seleccionar destino (Task/Plan/Objective/Project), seleccionar padre, confirmar
+- ✅ Hook: `useIdeas.ts` — 9 hooks (queries + mutations con invalidación en cascada)
 
-> ⚠️ **Pendiente de diseñar**: El flujo de promoción necesita un modal/wizard donde el usuario:
-> 1. Elige el tipo de destino (Task / Plan / Objective / Project)
-> 2. Selecciona la entidad padre (ej: "¿dentro de qué plan va esta task?")
-> 3. Confirma y la idea queda vinculada (`promoted_to_type` + `promoted_to_id`)
->
-> Campos en tabla ideas: `status = 'promoted'`, `promoted_to_type`, `promoted_to_id`
+### 3.5 UI: AI Budget en Settings ✅
+- ✅ Sección "AI Budget" dentro de SettingsView
+- ✅ Lista de suscripciones como cards compactas: nombre, ciclo, barra de progreso (% usado), input editable
+- ✅ Colores: verde (<50%), amarillo (50-80%), rojo (>80%)
+- ✅ Botón "+" para agregar suscripción con formulario inline (nombre, ciclo, reset day, budget)
+- ✅ Botón reset por suscripción + botón eliminar
+- ✅ Hook: `useSubscriptions.ts` — 5 hooks
 
-### 3.5 Tabla idea_evaluations (nueva)
+### 3.6 Banner de AI Budget en Ideas ✅
+- ✅ Banner sutil arriba del Kanban
+- ✅ Muestra suscripciones >70%: "! Claude Code: 82% usado"
+- ✅ Doble alerta (!!) para suscripciones >90%
+- ✅ Solo aparece si hay suscripciones configuradas y alguna está alta
+
+### 3.7 Centro de Ayuda ✅
+- ✅ Botón `?` junto al título "Ideas" para abrir/cerrar panel de ayuda
+- ✅ Panel completo debajo del Kanban (sin scroll interno, contenido completo visible)
+- ✅ Secciones: flujo de trabajo, descripción de las 4 etapas, sistema de evaluación con fórmula, promoción, leyenda de iconos
+- ✅ Bilingüe (EN/ES)
+
+### 3.8 API Endpoints ✅
 ```
-idea_evaluations:
-  id, idea_id (FK), impact_score, cost_score, risk_score,
-  alignment_score, total_score, reasoning,
-  decision (pending/approved/rejected), decided_at, created_at
+Ideas: ✅
+  GET    /api/ideas                    → listar (filtrable por ?status=)
+  GET    /api/ideas/:id                → detalle
+  POST   /api/ideas                    → crear
+  PATCH  /api/ideas/:id                → actualizar
+  DELETE /api/ideas/:id                → borrar
+  POST   /api/ideas/:id/evaluate       → crear/actualizar evaluación
+  GET    /api/ideas/:id/evaluation     → obtener evaluación
+  PATCH  /api/ideas/:id/decide         → aprobar/rechazar
+  POST   /api/ideas/:id/promote        → promover a entidad
+
+Subscriptions: ✅
+  GET    /api/subscriptions            → listar todas
+  POST   /api/subscriptions            → crear
+  PATCH  /api/subscriptions/:id        → actualizar
+  DELETE /api/subscriptions/:id        → borrar
+  PATCH  /api/subscriptions/:id/usage  → actualizar % usado
 ```
+
+### 3.9 Arquitectura por entidad ✅
+Siguiendo el patrón establecido en Phase 1:
+- ✅ `routes/ideas.routes.ts` + `routes/subscriptions.routes.ts`
+- ✅ `controllers/ideas.controller.ts` + `controllers/subscriptions.controller.ts`
+- ✅ `repositories/ideas.repository.ts` + `repositories/subscriptions.repository.ts`
+- ✅ `hooks/useIdeas.ts` + `hooks/useSubscriptions.ts`
+- ✅ `components/ideas/IdeasView.tsx` — vista Kanban completa
+- ✅ Rutas registradas en `server.ts`, vista conectada en `AppShell.tsx`
 
 ---
 
-## Phase 4: Dashboard + Views avanzadas
+## Phase 4: Dashboard + Views Avanzadas ✅
 
-### 4.1 Overview Dashboard
-- Misión actual como header
-- Stats globales: total tasks, completion rate, active plans, ideas pendientes
-- Objetivos con barras de progreso
-- Proyectos activos con % de progreso
-- Ideas pendientes de evaluar (contador)
+### 4.1 DB: Activity Log ✅
+- ✅ Nueva tabla `activity_log`: id, action (created|completed|promoted|scanned|deleted|decided), entity_type (task|idea|project|plan|objective), entity_id, description (human-readable), created_at
+- ✅ Migración en `migrate.ts`
+- ✅ Schema Drizzle en `schema.ts`
 
-### 4.2 Task Board (Kanban)
-- Vista kanban por status: Pending → In Progress → Done → Blocked
-- Drag-and-drop entre columnas (cambia status)
-- Drag-and-drop vertical (cambia sort_order)
-- Filtros: por plan, por proyecto, por prioridad
+### 4.2 Backend: Activity + Stats ✅
+- ✅ Repository: `activity.repository.ts` — log(action, entityType, entityId, description) + findRecent(limit)
+- ✅ Controller: `activity.controller.ts` — getRecent con ?limit= opcional
+- ✅ Routes: `activity.routes.ts` — GET /api/activity
+- ✅ Controller: `stats.controller.ts` — endpoint único que calcula totalTasks, completedTasks, completionRate, activePlans, pendingIdeas
+- ✅ Routes: `stats.routes.ts` — GET /api/stats
+- ✅ Ambas rutas registradas en `server.ts`
 
-### 4.3 Gráficos (Recharts)
-- Progreso de objetivos/planes a lo largo del tiempo
-- Task burndown chart
-- Distribución de ideas por status (pie chart)
+### 4.3 Activity Logging en Controllers Existentes ✅
+Cada mutación relevante inserta un log automáticamente:
+- ✅ `tasks.controller.ts`: on create, on status change to 'done', on delete
+- ✅ `ideas.controller.ts`: on create, on promote, on decide
+- ✅ `projects.controller.ts`: on create, on scan
+- ✅ `plans.controller.ts`: on create
+- ✅ `objectives.controller.ts`: on create
+
+### 4.4 Frontend: Hooks ✅
+- ✅ `useStats.ts` — useStats() → GET /api/stats
+- ✅ `useActivity.ts` — useActivity(limit) → GET /api/activity?limit=
+
+### 4.5 Overview Dashboard — 10 Cards funcionales ✅
+Layout en pantallas xl+: Strategic Schema a la izquierda con 4 cards debajo, columna derecha con 6 cards adicionales. En pantallas menores todo apila verticalmente.
+
+**Cards originales (datos reales):**
+- ✅ **Stats Globales**: 4 mini-stats (tasks completadas/total, planes activos, ideas pendientes, % completion rate) + barra de progreso
+- ✅ **Proyectos Activos**: lista de hasta 5 proyectos con status badge, click navega a tab Projects
+- ✅ **Actividad Reciente**: feed vertical de últimas 10 acciones con iconos (✓ completed, + created, ↑ promoted, ⟲ scanned) y tiempo relativo
+- ✅ **Captura Rápida**: toggle Idea/Task, formulario inline para crear sin cambiar de tab, feedback visual "Guardado ✓"
+
+**Cards adicionales (datos reales + mock fallback):**
+- ✅ **Objectives at a Glance**: barras de progreso por objetivo con % (datos reales)
+- ✅ **Focus Queue**: top 6 tareas pendientes ordenadas por prioridad, con toggle de status clickeable (datos reales)
+- ✅ **Task Breakdown**: barra apilada horizontal de distribución por estado + leyenda con contadores (datos reales)
+- ✅ **Activity Heatmap**: grid estilo GitHub de actividad de las últimas 4 semanas, con leyenda de intensidad (datos reales, mock fallback)
+- ✅ **Upcoming Deadlines**: tareas con deadline más cercano + días restantes coloreados (datos reales, mock fallback si no hay deadlines)
+- ✅ **Scratchpad**: bloc de notas rápido persistente en localStorage
+
+### 4.6 Strategic Schema — Polish Visual ✅
+- ✅ Progress bars con color por valor: 0-33% rojo, 34-66% amber, 67-100% verde
+- ✅ Mission header con `border-l-2 border-matrix-accent` para destacar
+- ✅ Transiciones suaves `transition-all duration-300` en secciones expandibles
+
+### 4.7 Task Board (Kanban) ✅
+- ✅ Toggle lista/board en header de TasksView (iconos ☰ / ◫)
+- ✅ Nuevo componente `TaskBoard.tsx`
+- ✅ 4 columnas: Pending | In Progress | Done | Blocked — cada una con header + badge count
+- ✅ Cards: título, dot de prioridad con color, nombre del plan
+- ✅ Drag-and-drop HTML5 nativo entre columnas → actualiza status via React Query
+- ✅ Filtros: por plan (dropdown) y por prioridad (dropdown)
+- ✅ Status `blocked` añadido al schema de validación Zod del backend
+
+### 4.8 Analytics Tab ✅
+Reemplaza "Passwords" en el sidebar.
+- ✅ Dependencia `recharts` v3 instalada
+- ✅ Tab type actualizado: `'passwords'` → `'analytics'` en ui.store.ts
+- ✅ Sidebar actualizado: icono ◪, sin disabled
+- ✅ AppShell actualizado: case 'analytics' → `<AnalyticsView />`
+- ✅ **Progreso de Objetivos**: BarChart horizontal, cada barra = un objetivo con %, colores rojo/amber/verde según valor
+- ✅ **Distribución de Tareas**: PieChart donut con slices por status (pending, in_progress, done, blocked) + leyenda
+- ✅ **Pipeline de Ideas**: PieChart donut con slices por status (pending, evaluating, approved, rejected, promoted) + leyenda
+
+### 4.9 Right Panel — Widgets Contextuales ✅ (MOCK DATA)
+Panel lateral derecho visible en pantallas xl+ (1280px+), 288px de ancho. Muestra widgets con datos mock que varían según el tab activo.
+
+> **⚠ MOCK DATA — Candidatos a funcionalidades reales:**
+> - **Daily Focus / Pomodoro tracker**: pomodorosToday/Goal, focusMinutes, currentTask → convertir en timer real con persistencia en DB
+> - **Upcoming Deadlines**: mock deadlines con prioridad y días restantes → ya parcialmente real en Overview, unificar
+> - **Productivity Streak**: streak de días consecutivos, tasks/semana, gráfico de barras semanal → calcular desde activity_log
+> - **Weekly Burndown**: remaining vs completed por día → calcular desde tasks + activity_log
+> - **Tech Radar**: tecnologías con rings Adopt/Trial/Assess/Hold → nueva tabla `tech_radar` con CRUD
+> - **Dependencies Health**: versiones current vs latest, status ok/patch/minor/major → leer de package.json real + npm registry API
+> - **Top Scored Ideas**: ideas ordenadas por totalScore → ya disponible desde ideas API, conectar
+> - **Idea Funnel**: contadores por etapa del pipeline → calcular desde ideas API
+> - **Key Metrics (KPIs)**: velocity, cycle time, throughput, WIP → calcular desde tasks + activity_log
+> - **Weekly Trends**: completed vs created por semana → calcular desde activity_log
+> - **Keyboard Shortcuts**: lista de atajos → implementar shortcuts reales (Phase 7)
+> - **System Status**: API server, DB, sync, backups → health checks reales
+> - **Motivational Quote**: rotación diaria de citas → podría ser configurable o AI-generated
+
+| Tab | Widgets mock |
+|-----|-------------|
+| Overview | Daily Focus, Upcoming Deadlines, Productivity Streak, Daily Quote |
+| Tasks | Productivity Streak, Weekly Burndown, Upcoming Deadlines |
+| Projects | Tech Radar, Dependencies Health, System Status |
+| Ideas | Idea Funnel, Top Scored Ideas, Daily Quote |
+| Analytics | Key Metrics, Weekly Trends, Productivity Streak |
+| Settings | Keyboard Shortcuts, System Status, Daily Quote |
+
+### 4.10 i18n ✅
+18 keys nuevos añadidos en EN/ES:
+- globalStats, activeProjects, recentActivity, quickCapture, completionRate, activePlans, pendingIdeas, noActivity
+- idea, task, saved, analytics, objectivesProgress, taskDistribution, ideasPipeline
+- board, list, blocked, pending, inProgress, done
+
+### 4.11 API Endpoints Nuevos ✅
+```
+Activity: ✅
+  GET    /api/activity             → últimas acciones (?limit= opcional, default 20)
+
+Stats: ✅
+  GET    /api/stats                → { totalTasks, completedTasks, completionRate, activePlans, pendingIdeas }
+```
+
+### 4.12 Archivos Nuevos ✅
+- `src/backend/repositories/activity.repository.ts`
+- `src/backend/controllers/activity.controller.ts`
+- `src/backend/routes/activity.routes.ts`
+- `src/backend/controllers/stats.controller.ts`
+- `src/backend/routes/stats.routes.ts`
+- `src/frontend/hooks/useStats.ts`
+- `src/frontend/hooks/useActivity.ts`
+- `src/frontend/components/tasks/TaskBoard.tsx`
+- `src/frontend/components/analytics/AnalyticsView.tsx`
+- `src/frontend/components/layout/RightPanel.tsx`
+
+### 4.13 Archivos Modificados ✅
+- `src/backend/db/schema.ts` — tabla activity_log
+- `src/backend/db/migrate.ts` — CREATE TABLE activity_log
+- `src/backend/server.ts` — registrar activity + stats routes
+- `src/backend/controllers/tasks.controller.ts` — activity logging + status 'blocked'
+- `src/backend/controllers/ideas.controller.ts` — activity logging
+- `src/backend/controllers/projects.controller.ts` — activity logging
+- `src/backend/controllers/plans.controller.ts` — activity logging
+- `src/backend/controllers/objectives.controller.ts` — activity logging
+- `src/frontend/stores/ui.store.ts` — Tab type: passwords → analytics
+- `src/frontend/components/layout/Sidebar.tsx` — passwords → analytics
+- `src/frontend/components/layout/AppShell.tsx` — analytics + RightPanel
+- `src/frontend/components/overview/OverviewView.tsx` — 10 cards + visual polish + layout xl
+- `src/frontend/components/tasks/TasksView.tsx` — toggle lista/board
+- `src/frontend/lib/i18n.ts` — 18 keys nuevos
 
 ---
 
@@ -353,18 +499,15 @@ idea_evaluations:
 
 ---
 
-## Phase 6: AI + Tokens
+## Phase 6: AI Integration
 
 ### 6.1 AI Integration (opcional, local)
 - Ollama integration para evaluación de ideas con AI
-- AI reasoning como complemento al scoring local
+- AI reasoning como complemento al scoring manual
 - Recomendaciones estratégicas
 - Daily briefing ("hoy trabaja en esto, por esta razón")
 
-### 6.2 Token Budget Tracking
-- Registro de suscripciones/APIs con coste mensual
-- Tracking de tokens consumidos por servicio
-- Alertas de presupuesto
+> **Nota**: Token/AI Budget tracking se adelantó a Phase 3 (subscriptions en Settings)
 
 ---
 
@@ -388,7 +531,7 @@ Se migra módulo a módulo, eliminando complejidad innecesaria:
 | matrix-v2 (complejo) | matrix (simplificado) |
 |-----------------------|----------------------|
 | Vision → Strategy → Pillars → Objectives | Mission → Objectives → Plans → Tasks |
-| 18 tablas | 8 tablas + 2 nuevas (scans, evaluations) |
+| 18 tablas | 8 tablas + 3 nuevas (scans, evaluations, subscriptions) |
 | Webpack | Vite |
 | PostgreSQL/Supabase ready | SQLite only (local-first) |
 | Scoring con sinónimos hardcodeados | Scoring semántico simplificado |

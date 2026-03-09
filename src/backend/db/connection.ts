@@ -1,5 +1,4 @@
 import { drizzle } from 'drizzle-orm/better-sqlite3';
-import Database from 'better-sqlite3';
 import { app } from 'electron';
 import path from 'path';
 import fs from 'fs';
@@ -13,6 +12,12 @@ export function initDb() {
   const userDataPath = app.getPath('userData');
   const dataDir = path.join(userDataPath, 'data');
   fs.mkdirSync(dataDir, { recursive: true });
+
+  // In packaged app, native modules live in resources/node_modules/
+  // In dev, standard require from project node_modules
+  const Database = app.isPackaged
+    ? require(path.join(process.resourcesPath, 'node_modules', 'better-sqlite3'))
+    : require('better-sqlite3');
 
   const dbPath = path.join(dataDir, 'matrix.db');
   const sqliteDb = new Database(dbPath);

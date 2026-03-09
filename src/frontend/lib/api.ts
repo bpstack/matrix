@@ -3,6 +3,7 @@ declare global {
     matrix: {
       apiBase: string;
       platform: string;
+      onThemeChange?: (callback: (theme: string) => void) => void;
     };
   }
 }
