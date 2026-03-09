@@ -18,8 +18,15 @@ module.exports = {
         },
       },
       fontFamily: {
-        sans: ['Poppins', 'system-ui', '-apple-system', 'sans-serif'],
-        mono: ['JetBrains Mono', 'Fira Code', 'Consolas', 'monospace'],
+        sans: ['-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Noto Sans', 'Helvetica', 'Arial', 'sans-serif'],
+        mono: ['ui-monospace', 'SFMono-Regular', 'SF Mono', 'Menlo', 'Consolas', 'monospace'],
+      },
+      fontSize: {
+        xs: ['11px', '16px'],
+        sm: ['12px', '20px'],
+        base: ['14px', '20px'],
+        lg: ['16px', '24px'],
+        xl: ['20px', '28px'],
       },
     },
   },

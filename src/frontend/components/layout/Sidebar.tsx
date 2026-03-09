@@ -16,22 +16,22 @@ export function Sidebar() {
 
   return (
     <aside
-      className={`flex flex-col bg-matrix-bg border-r border-matrix-border transition-all ${
-        sidebarCollapsed ? 'w-14' : 'w-52'
+      className={`flex flex-col bg-matrix-surface border-r border-matrix-border transition-all ${
+        sidebarCollapsed ? 'w-12' : 'w-48'
       }`}
     >
-      <div className="flex items-center justify-between h-12 px-4 border-b border-matrix-border">
+      <div className="flex items-center justify-between h-10 px-3 border-b border-matrix-border">
         {!sidebarCollapsed && (
-          <span className="text-matrix-accent font-bold text-lg tracking-wider">MATRIX</span>
+          <span className="text-matrix-accent font-semibold text-sm tracking-wide">MATRIX</span>
         )}
         <button
           onClick={toggleSidebar}
-          className="text-matrix-muted hover:text-gray-200 transition-colors"
+          className="text-matrix-muted hover:text-gray-300 transition-colors text-xs"
         >
           {sidebarCollapsed ? '→' : '←'}
         </button>
       </div>
-      <nav className="flex-1 py-2">
+      <nav className="flex-1 py-1">
         {tabs.map(({ key, icon }) => {
           const isActive = activeTab === key;
           const disabled = key === 'passwords';
@@ -40,16 +40,16 @@ export function Sidebar() {
               key={key}
               onClick={() => !disabled && setActiveTab(key)}
               disabled={disabled}
-              className={`w-full flex items-center gap-3 px-4 py-3 text-sm transition-colors ${
+              className={`w-full flex items-center gap-2.5 px-3 py-1.5 text-sm transition-colors ${
                 isActive
                   ? 'bg-matrix-accent/10 text-matrix-accent'
                   : disabled
                     ? 'text-gray-600 cursor-not-allowed'
-                    : 'text-matrix-muted hover:text-gray-200 hover:bg-white/[0.04]'
+                    : 'text-matrix-muted hover:text-gray-300 hover:bg-white/[0.04]'
               }`}
             >
-              <span className="text-base">{icon}</span>
-              {!sidebarCollapsed && <span>{t(key, language)}</span>}
+              <span className="text-sm">{icon}</span>
+              {!sidebarCollapsed && <span className="text-sm">{t(key, language)}</span>}
             </button>
           );
         })}
