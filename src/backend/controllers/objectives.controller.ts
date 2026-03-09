@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { z } from 'zod';
 import { objectivesRepo } from '../repositories/objectives.repository';
+import { activityRepo } from '../repositories/activity.repository';
 import { plansRepo } from '../repositories/plans.repository';
 import { tasksRepo } from '../repositories/tasks.repository';
 
@@ -62,6 +63,7 @@ export const objectivesController = {
     const parsed = createSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten().fieldErrors });
     const o = objectivesRepo.create(parsed.data);
+    activityRepo.log('created', 'objective', o.id, `Created objective: ${o.title}`);
     res.status(201).json(o);
   },
 

@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { z } from 'zod';
 import { projectsRepo } from '../repositories/projects.repository';
 import { scanProject, collectTechStats } from '../engines/scanner';
+import { activityRepo } from '../repositories/activity.repository';
 
 const createSchema = z.object({
   name: z.string().min(1),
@@ -61,6 +62,7 @@ export const projectsController = {
       projectsRepo.update(p.id, { techStats: JSON.stringify(techStats) });
     }
 
+    activityRepo.log('created', 'project', p.id, `Created project: ${p.name}`);
     res.status(201).json({
       ...p,
       tags: p.tags ? JSON.parse(p.tags) : [],
@@ -114,6 +116,7 @@ export const projectsController = {
     const techStats = collectTechStats(p.path);
     projectsRepo.update(id, { techStats: JSON.stringify(techStats) });
 
+    activityRepo.log('scanned', 'project', id, `Scanned project: ${p.name}`);
     res.json({ scan, techStats });
   },
 

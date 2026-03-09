@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { z } from 'zod';
 import { plansRepo } from '../repositories/plans.repository';
+import { activityRepo } from '../repositories/activity.repository';
 import { tasksRepo } from '../repositories/tasks.repository';
 
 const createSchema = z.object({
@@ -56,6 +57,7 @@ export const plansController = {
     const parsed = createSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten().fieldErrors });
     const p = plansRepo.create(parsed.data);
+    activityRepo.log('created', 'plan', p.id, `Created plan: ${p.title}`);
     res.status(201).json(p);
   },
 

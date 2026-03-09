@@ -6,6 +6,10 @@ import { plansRouter } from './routes/plans.routes';
 import { tasksRouter } from './routes/tasks.routes';
 import { settingsRouter } from './routes/settings.routes';
 import { projectsRouter } from './routes/projects.routes';
+import { ideasRouter } from './routes/ideas.routes';
+import { subscriptionsRouter } from './routes/subscriptions.routes';
+import { activityRouter } from './routes/activity.routes';
+import { statsRouter } from './routes/stats.routes';
 
 const app = express();
 
@@ -29,6 +33,10 @@ app.use('/api', plansRouter);
 app.use('/api', tasksRouter);
 app.use('/api', settingsRouter);
 app.use('/api', projectsRouter);
+app.use('/api', ideasRouter);
+app.use('/api', subscriptionsRouter);
+app.use('/api', activityRouter);
+app.use('/api', statsRouter);
 
 app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   const message = err instanceof Error ? err.message : 'Internal server error';
