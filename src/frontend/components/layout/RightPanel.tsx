@@ -424,7 +424,7 @@ const PANEL_CONFIG: Record<Tab, React.FC[]> = {
   tasks: [ProductivityStreak, TaskBurndown, UpcomingDeadlines],
   projects: [TechRadar, DependenciesHealth, SystemStatus],
   ideas: [IdeaFunnel, TopScoredIdeas, MotivationalQuote],
-  analytics: [KeyMetrics, WeeklyTrends, ProductivityStreak],
+  passwords: [ShortcutsHelp, SystemStatus, MotivationalQuote],
   settings: [ShortcutsHelp, SystemStatus, MotivationalQuote],
 };
 

@@ -7,7 +7,7 @@ const tabs: { key: Tab; icon: string }[] = [
   { key: 'projects', icon: '◫' },
   { key: 'tasks', icon: '☰' },
   { key: 'ideas', icon: '✦' },
-  { key: 'analytics', icon: '◪' },
+  { key: 'passwords', icon: '🔒' },
   { key: 'settings', icon: '⚙' },
 ];
 
@@ -34,7 +34,7 @@ export function Sidebar() {
       <nav className="flex-1 py-1">
         {tabs.map(({ key, icon }) => {
           const isActive = activeTab === key;
-          const disabled = false;
+          const disabled = key === 'passwords';
           return (
             <button
               key={key}

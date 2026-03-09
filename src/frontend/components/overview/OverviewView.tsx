@@ -1,10 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
+import {
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
+  PieChart, Pie,
+} from 'recharts';
 import { useMission, useCreateMission, useUpdateMission, useDeleteMission } from '../../hooks/useMission';
 import { useObjectives, useCreateObjective, useUpdateObjective, useDeleteObjective } from '../../hooks/useObjectives';
 import { usePlans, useCreatePlan, useUpdatePlan, useDeletePlan } from '../../hooks/usePlans';
 import { useTasks, useCreateTask, useUpdateTask, useDeleteTask } from '../../hooks/useTasks';
 import { useProjects } from '../../hooks/useProjects';
-import { useCreateIdea } from '../../hooks/useIdeas';
+import { useIdeas, useCreateIdea } from '../../hooks/useIdeas';
 import { useStats } from '../../hooks/useStats';
 import { useActivity } from '../../hooks/useActivity';
 import { useUiStore } from '../../stores/ui.store';
@@ -635,7 +639,7 @@ function RecentActivityCard({ language }: { language: 'en' | 'es' }) {
       {!activity || activity.length === 0 ? (
         <p className="text-xs text-matrix-muted py-4 text-center">{t('noActivity' as LangKey, language)}</p>
       ) : (
-        <div className="space-y-1 max-h-48 overflow-y-auto">
+        <div className="space-y-1 max-h-48 overflow-y-auto pr-4">
           {activity.map(a => (
             <div key={a.id} className="flex items-start gap-2 py-1 text-xs">
               <span className="text-matrix-accent shrink-0 w-3 text-center">{activityIcons[a.action] || '•'}</span>
@@ -749,20 +753,23 @@ function FocusQueueCard({ language }: { language: 'en' | 'es' }) {
   const prioDot: Record<string, string> = { low: 'bg-gray-500', medium: 'bg-blue-400', high: 'bg-orange-400', urgent: 'bg-red-400' };
 
   const focusTasks = [...(allTasks || [])]
-    .filter(t => t.status !== 'done')
-    .sort((a, b) => (prioOrder[a.priority] ?? 9) - (prioOrder[b.priority] ?? 9))
-    .slice(0, 6);
+    .sort((a, b) => {
+      // done tasks go to the bottom
+      if (a.status === 'done' && b.status !== 'done') return 1;
+      if (a.status !== 'done' && b.status === 'done') return -1;
+      return (prioOrder[a.priority] ?? 9) - (prioOrder[b.priority] ?? 9);
+    });
 
   return (
     <SectionCard title={language === 'es' ? 'Cola de enfoque' : 'Focus Queue'} icon="▸">
       {focusTasks.length === 0 ? (
         <p className="text-xs text-matrix-muted py-4 text-center">{language === 'es' ? 'Sin tareas pendientes' : 'All clear!'}</p>
       ) : (
-        <div className="space-y-1">
+        <div className="space-y-1 max-h-64 overflow-y-auto pr-4">
           {focusTasks.map(task => (
             <div key={task.id} className="flex items-center gap-2 py-1 group">
               <button onClick={() => updateTask.mutate({ id: task.id, status: nextStatus[task.status] })} className={`text-xs ${statusColor[task.status]}`}>{statusIcon[task.status]}</button>
-              <span className="text-sm text-gray-300 flex-1 truncate">{task.title}</span>
+              <span className={`text-sm flex-1 truncate ${task.status === 'done' ? 'line-through text-gray-600' : 'text-gray-300'}`}>{task.title}</span>
               <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${prioDot[task.priority]}`} />
             </div>
           ))}
@@ -957,6 +964,146 @@ function ScratchpadCard({ language }: { language: 'en' | 'es' }) {
   );
 }
 
+/* ── Analytics Charts ── */
+
+function barColor(value: number): string {
+  if (value <= 33) return '#ef4444';
+  if (value <= 66) return '#f59e0b';
+  return '#22c55e';
+}
+
+const TASK_COLORS: Record<string, string> = {
+  pending: '#6b7280',
+  in_progress: '#f59e0b',
+  done: '#22c55e',
+};
+
+const IDEA_COLORS: Record<string, string> = {
+  pending: '#6b7280',
+  evaluating: '#3b82f6',
+  approved: '#22c55e',
+  rejected: '#ef4444',
+  promoted: '#a855f7',
+};
+
+const ChartTooltip = ({ active, payload }: any) => {
+  if (!active || !payload?.length) return null;
+  const d = payload[0].payload;
+  return (
+    <div className="bg-matrix-surface border border-matrix-border rounded px-2 py-1 text-xs">
+      <p className="text-gray-300">{d.name}: {d.value ?? d.progress}%</p>
+    </div>
+  );
+};
+
+function ObjectivesChartCard({ language }: { language: 'en' | 'es' }) {
+  const { data: missions } = useMission();
+  const mission = missions?.[0];
+  const { data: objectives } = useObjectives(mission?.id);
+
+  const objData = (objectives || []).map(o => ({
+    name: o.title.length > 25 ? o.title.slice(0, 25) + '…' : o.title,
+    progress: (o as any).progress ?? 0,
+  }));
+
+  return (
+    <SectionCard title={t('objectivesProgress' as LangKey, language)} icon="◪">
+      {objData.length === 0 ? (
+        <p className="text-xs text-matrix-muted py-4 text-center">{language === 'es' ? 'Sin objetivos' : 'No objectives yet'}</p>
+      ) : (
+        <ResponsiveContainer width="100%" height={objData.length * 50 + 20}>
+          <BarChart data={objData} layout="vertical" margin={{ left: 10, right: 20, top: 5, bottom: 5 }}>
+            <XAxis type="number" domain={[0, 100]} tick={{ fill: '#6b7280', fontSize: 10 }} />
+            <YAxis type="category" dataKey="name" width={140} tick={{ fill: '#9ca3af', fontSize: 11 }} />
+            <Tooltip content={<ChartTooltip />} />
+            <Bar dataKey="progress" radius={[0, 4, 4, 0]} barSize={20}>
+              {objData.map((entry, i) => (
+                <Cell key={i} fill={barColor(entry.progress)} />
+              ))}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      )}
+    </SectionCard>
+  );
+}
+
+function TaskPieCard({ language }: { language: 'en' | 'es' }) {
+  const { data: allTasks } = useTasks();
+  const taskCounts: Record<string, number> = { pending: 0, in_progress: 0, done: 0 };
+  for (const task of allTasks || []) {
+    taskCounts[task.status] = (taskCounts[task.status] || 0) + 1;
+  }
+  const taskData = Object.entries(taskCounts).filter(([, v]) => v > 0).map(([status, value]) => ({ name: status, value }));
+
+  return (
+    <SectionCard title={t('taskDistribution' as LangKey, language)} icon="◔">
+      {taskData.length === 0 ? (
+        <p className="text-xs text-matrix-muted py-4 text-center">{t('noTasks' as LangKey, language)}</p>
+      ) : (
+        <div>
+          <ResponsiveContainer width="100%" height={180}>
+            <PieChart>
+              <Pie data={taskData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={35} outerRadius={60} paddingAngle={2}>
+                {taskData.map((entry, i) => (
+                  <Cell key={i} fill={TASK_COLORS[entry.name] || '#6b7280'} />
+                ))}
+              </Pie>
+              <Tooltip content={<ChartTooltip />} />
+            </PieChart>
+          </ResponsiveContainer>
+          <div className="flex flex-wrap gap-3 justify-center mt-1">
+            {taskData.map(d => (
+              <div key={d.name} className="flex items-center gap-1.5 text-xs">
+                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: TASK_COLORS[d.name] }} />
+                <span className="text-matrix-muted">{d.name} ({d.value})</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </SectionCard>
+  );
+}
+
+function IdeasPieCard({ language }: { language: 'en' | 'es' }) {
+  const { data: allIdeas } = useIdeas();
+  const ideaCounts: Record<string, number> = {};
+  for (const idea of allIdeas || []) {
+    ideaCounts[idea.status] = (ideaCounts[idea.status] || 0) + 1;
+  }
+  const ideaData = Object.entries(ideaCounts).filter(([, v]) => v > 0).map(([status, value]) => ({ name: status, value }));
+
+  return (
+    <SectionCard title={t('ideasPipeline' as LangKey, language)} icon="✦">
+      {ideaData.length === 0 ? (
+        <p className="text-xs text-matrix-muted py-4 text-center">{language === 'es' ? 'Sin ideas' : 'No ideas yet'}</p>
+      ) : (
+        <div>
+          <ResponsiveContainer width="100%" height={180}>
+            <PieChart>
+              <Pie data={ideaData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={35} outerRadius={60} paddingAngle={2}>
+                {ideaData.map((entry, i) => (
+                  <Cell key={i} fill={IDEA_COLORS[entry.name] || '#6b7280'} />
+                ))}
+              </Pie>
+              <Tooltip content={<ChartTooltip />} />
+            </PieChart>
+          </ResponsiveContainer>
+          <div className="flex flex-wrap gap-3 justify-center mt-1">
+            {ideaData.map(d => (
+              <div key={d.name} className="flex items-center gap-1.5 text-xs">
+                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: IDEA_COLORS[d.name] }} />
+                <span className="text-matrix-muted">{d.name} ({d.value})</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </SectionCard>
+  );
+}
+
 /* ── Main ── */
 
 export function OverviewView() {
@@ -982,6 +1129,12 @@ export function OverviewView() {
             <ActiveProjectsCard language={language} />
             <RecentActivityCard language={language} />
             <QuickCaptureCard language={language} />
+          </div>
+          {/* Analytics Charts */}
+          <ObjectivesChartCard language={language} />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <TaskPieCard language={language} />
+            <IdeasPieCard language={language} />
           </div>
         </div>
 

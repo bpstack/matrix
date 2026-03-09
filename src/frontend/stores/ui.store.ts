@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-export type Tab = 'overview' | 'projects' | 'tasks' | 'ideas' | 'analytics' | 'settings';
+export type Tab = 'overview' | 'projects' | 'tasks' | 'ideas' | 'passwords' | 'settings';
 export type Theme = 'dark' | 'light';
 
 interface UiState {
