@@ -101,6 +101,47 @@ export function runMigrations() {
     scanned_at TEXT NOT NULL
   )`);
 
+  // Phase 3: Add new columns to ideas
+  try { db.run(sql.raw(`ALTER TABLE ideas ADD COLUMN target_type TEXT`)); } catch { /* already exists */ }
+  try { db.run(sql.raw(`ALTER TABLE ideas ADD COLUMN target_id INTEGER`)); } catch { /* already exists */ }
+  try { db.run(sql.raw(`ALTER TABLE ideas ADD COLUMN project_id INTEGER`)); } catch { /* already exists */ }
+
+  db.run(sql`CREATE TABLE IF NOT EXISTS idea_evaluations (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    idea_id INTEGER NOT NULL UNIQUE,
+    alignment_score INTEGER NOT NULL,
+    impact_score INTEGER NOT NULL,
+    cost_score INTEGER NOT NULL,
+    risk_score INTEGER NOT NULL,
+    total_score REAL NOT NULL,
+    reasoning TEXT,
+    decision TEXT NOT NULL DEFAULT 'pending',
+    decided_at TEXT,
+    created_at TEXT NOT NULL
+  )`);
+
+  // Fix old scores stored in 0-1 range → multiply to 1-10 range
+  db.run(sql.raw(`UPDATE idea_evaluations SET total_score = total_score * 10 WHERE total_score <= 1`));
+
+  db.run(sql`CREATE TABLE IF NOT EXISTS subscriptions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    cycle TEXT NOT NULL DEFAULT 'monthly',
+    reset_day INTEGER NOT NULL DEFAULT 1,
+    budget INTEGER NOT NULL DEFAULT 100,
+    current_used INTEGER NOT NULL DEFAULT 0,
+    updated_at TEXT NOT NULL
+  )`);
+
+  db.run(sql`CREATE TABLE IF NOT EXISTS activity_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    action TEXT NOT NULL,
+    entity_type TEXT NOT NULL,
+    entity_id INTEGER NOT NULL,
+    description TEXT NOT NULL,
+    created_at TEXT NOT NULL
+  )`);
+
   db.run(sql`CREATE TABLE IF NOT EXISTS settings (
     key TEXT PRIMARY KEY,
     value TEXT NOT NULL,

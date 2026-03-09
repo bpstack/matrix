@@ -7,7 +7,7 @@ const tabs: { key: Tab; icon: string }[] = [
   { key: 'projects', icon: '◫' },
   { key: 'tasks', icon: '☰' },
   { key: 'ideas', icon: '✦' },
-  { key: 'passwords', icon: '🔒' },
+  { key: 'analytics', icon: '◪' },
   { key: 'settings', icon: '⚙' },
 ];
 
@@ -34,7 +34,7 @@ export function Sidebar() {
       <nav className="flex-1 py-1">
         {tabs.map(({ key, icon }) => {
           const isActive = activeTab === key;
-          const disabled = key === 'passwords';
+          const disabled = false;
           return (
             <button
               key={key}
@@ -45,7 +45,7 @@ export function Sidebar() {
                   ? 'bg-matrix-accent/10 text-matrix-accent'
                   : disabled
                     ? 'text-gray-600 cursor-not-allowed'
-                    : 'text-matrix-muted hover:text-gray-300 hover:bg-white/[0.04]'
+                    : 'text-matrix-muted hover:text-matrix-accent hover:bg-matrix-accent/5'
               }`}
             >
               <span className="text-sm">{icon}</span>

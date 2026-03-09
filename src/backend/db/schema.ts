@@ -84,10 +84,46 @@ export const ideas = sqliteTable('ideas', {
   title: text('title').notNull(),
   description: text('description'),
   status: text('status').notNull().default('pending'),
+  targetType: text('target_type'),
+  targetId: integer('target_id'),
+  projectId: integer('project_id'),
   promotedToType: text('promoted_to_type'),
   promotedToId: integer('promoted_to_id'),
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull(),
+});
+
+export const ideaEvaluations = sqliteTable('idea_evaluations', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  ideaId: integer('idea_id').notNull(),
+  alignmentScore: integer('alignment_score').notNull(),
+  impactScore: integer('impact_score').notNull(),
+  costScore: integer('cost_score').notNull(),
+  riskScore: integer('risk_score').notNull(),
+  totalScore: integer('total_score').notNull(),
+  reasoning: text('reasoning'),
+  decision: text('decision').notNull().default('pending'),
+  decidedAt: text('decided_at'),
+  createdAt: text('created_at').notNull(),
+});
+
+export const subscriptions = sqliteTable('subscriptions', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  name: text('name').notNull(),
+  cycle: text('cycle').notNull().default('monthly'),
+  resetDay: integer('reset_day').notNull().default(1),
+  budget: integer('budget').notNull().default(100),
+  currentUsed: integer('current_used').notNull().default(0),
+  updatedAt: text('updated_at').notNull(),
+});
+
+export const activityLog = sqliteTable('activity_log', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  action: text('action').notNull(),
+  entityType: text('entity_type').notNull(),
+  entityId: integer('entity_id').notNull(),
+  description: text('description').notNull(),
+  createdAt: text('created_at').notNull(),
 });
 
 export const settings = sqliteTable('settings', {

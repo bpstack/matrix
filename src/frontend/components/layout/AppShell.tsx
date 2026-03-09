@@ -6,6 +6,9 @@ import { OverviewView } from '../overview/OverviewView';
 import { TasksView } from '../tasks/TasksView';
 import { SettingsView } from '../settings/SettingsView';
 import { ProjectsView } from '../projects/ProjectsView';
+import { IdeasView } from '../ideas/IdeasView';
+import { AnalyticsView } from '../analytics/AnalyticsView';
+import { RightPanel } from './RightPanel';
 
 export function AppShell() {
   const { activeTab, language } = useUiStore();
@@ -18,14 +21,12 @@ export function AppShell() {
         return <ProjectsView />;
       case 'tasks':
         return <TasksView />;
+      case 'ideas':
+        return <IdeasView />;
       case 'settings':
         return <SettingsView />;
-      case 'passwords':
-        return (
-          <div className="flex items-center justify-center h-full text-matrix-muted">
-            <p className="text-xl">{t('comingSoon', language)}</p>
-          </div>
-        );
+      case 'analytics':
+        return <AnalyticsView />;
       default:
         return (
           <div className="flex items-center justify-center h-full text-matrix-muted">
@@ -44,6 +45,7 @@ export function AppShell() {
     <div className="flex h-screen bg-matrix-bg text-gray-200">
       <Sidebar />
       <main className="flex-1 overflow-auto">{renderContent()}</main>
+      <RightPanel activeTab={activeTab} />
     </div>
   );
 }
