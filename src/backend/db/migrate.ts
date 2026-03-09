@@ -8,6 +8,7 @@ export function runMigrations() {
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     title TEXT NOT NULL,
     description TEXT,
+    status TEXT NOT NULL DEFAULT 'in_progress',
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
   )`);
@@ -18,7 +19,7 @@ export function runMigrations() {
     title TEXT NOT NULL,
     description TEXT,
     sort_order INTEGER DEFAULT 0,
-    status TEXT NOT NULL DEFAULT 'active',
+    status TEXT NOT NULL DEFAULT 'in_progress',
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
   )`);
@@ -29,8 +30,8 @@ export function runMigrations() {
     title TEXT NOT NULL,
     description TEXT,
     sort_order INTEGER DEFAULT 0,
-    status TEXT NOT NULL DEFAULT 'active',
-    progress REAL DEFAULT 0,
+    status TEXT NOT NULL DEFAULT 'in_progress',
+    deadline TEXT,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
   )`);
@@ -54,7 +55,10 @@ export function runMigrations() {
     name TEXT NOT NULL,
     path TEXT,
     description TEXT,
+    url TEXT,
     status TEXT NOT NULL DEFAULT 'active',
+    tags TEXT,
+    tech_stats TEXT,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
   )`);
@@ -74,9 +78,27 @@ export function runMigrations() {
     title TEXT NOT NULL,
     description TEXT,
     status TEXT NOT NULL DEFAULT 'pending',
-    promoted_to_task_id INTEGER REFERENCES tasks(id),
+    promoted_to_type TEXT,
+    promoted_to_id INTEGER,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
+  )`);
+
+  // Add new columns to projects if missing (migration from Phase 1 → Phase 2)
+  try { db.run(sql.raw(`ALTER TABLE projects ADD COLUMN url TEXT`)); } catch { /* already exists */ }
+  try { db.run(sql.raw(`ALTER TABLE projects ADD COLUMN tags TEXT`)); } catch { /* already exists */ }
+  try { db.run(sql.raw(`ALTER TABLE projects ADD COLUMN tech_stats TEXT`)); } catch { /* already exists */ }
+
+  db.run(sql`CREATE TABLE IF NOT EXISTS project_scans (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_id INTEGER NOT NULL REFERENCES projects(id),
+    total_tasks INTEGER NOT NULL DEFAULT 0,
+    completed_tasks INTEGER NOT NULL DEFAULT 0,
+    blockers INTEGER NOT NULL DEFAULT 0,
+    wip_items INTEGER NOT NULL DEFAULT 0,
+    progress_percent INTEGER NOT NULL DEFAULT 0,
+    raw_data TEXT,
+    scanned_at TEXT NOT NULL
   )`);
 
   db.run(sql`CREATE TABLE IF NOT EXISTS settings (

@@ -1,9 +1,10 @@
-import { sqliteTable, text, integer, real } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
 
 export const mission = sqliteTable('mission', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   title: text('title').notNull(),
   description: text('description'),
+  status: text('status').notNull().default('in_progress'),
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull(),
 });
@@ -14,7 +15,7 @@ export const objectives = sqliteTable('objectives', {
   title: text('title').notNull(),
   description: text('description'),
   sortOrder: integer('sort_order').default(0),
-  status: text('status').notNull().default('active'),
+  status: text('status').notNull().default('in_progress'),
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull(),
 });
@@ -25,8 +26,8 @@ export const plans = sqliteTable('plans', {
   title: text('title').notNull(),
   description: text('description'),
   sortOrder: integer('sort_order').default(0),
-  status: text('status').notNull().default('active'),
-  progress: real('progress').default(0),
+  status: text('status').notNull().default('in_progress'),
+  deadline: text('deadline'),
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull(),
 });
@@ -50,9 +51,24 @@ export const projects = sqliteTable('projects', {
   name: text('name').notNull(),
   path: text('path'),
   description: text('description'),
+  url: text('url'),
   status: text('status').notNull().default('active'),
+  tags: text('tags'),
+  techStats: text('tech_stats'),
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull(),
+});
+
+export const projectScans = sqliteTable('project_scans', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  projectId: integer('project_id').notNull().references(() => projects.id),
+  totalTasks: integer('total_tasks').notNull().default(0),
+  completedTasks: integer('completed_tasks').notNull().default(0),
+  blockers: integer('blockers').notNull().default(0),
+  wipItems: integer('wip_items').notNull().default(0),
+  progressPercent: integer('progress_percent').notNull().default(0),
+  rawData: text('raw_data'),
+  scannedAt: text('scanned_at').notNull(),
 });
 
 export const projectLinks = sqliteTable('project_links', {
@@ -68,7 +84,8 @@ export const ideas = sqliteTable('ideas', {
   title: text('title').notNull(),
   description: text('description'),
   status: text('status').notNull().default('pending'),
-  promotedToTaskId: integer('promoted_to_task_id').references(() => tasks.id),
+  promotedToType: text('promoted_to_type'),
+  promotedToId: integer('promoted_to_id'),
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull(),
 });
