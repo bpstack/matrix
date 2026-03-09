@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { useTasks, useCreateTask, useUpdateTask, useDeleteTask, Task } from '../../hooks/useTasks';
 import { usePlans } from '../../hooks/usePlans';
 import { useUiStore } from '../../stores/ui.store';
-import { t } from '../../lib/i18n';
+import { t, LangKey } from '../../lib/i18n';
+import { TaskBoard } from './TaskBoard';
 
 const statusIcons: Record<string, string> = { pending: '○', in_progress: '◐', done: '●' };
 const statusColors: Record<string, string> = { pending: 'text-gray-500', in_progress: 'text-matrix-warning', done: 'text-matrix-success' };
@@ -11,6 +12,7 @@ const nextStatus: Record<string, string> = { pending: 'in_progress', in_progress
 
 export function TasksView() {
   const { language } = useUiStore();
+  const [viewMode, setViewMode] = useState<'list' | 'board'>('list');
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [draggedId, setDraggedId] = useState<number | null>(null);
   const [dropTarget, setDropTarget] = useState<number | null>(null);
@@ -108,17 +110,28 @@ export function TasksView() {
   const selectCls = 'bg-matrix-bg border border-matrix-border rounded px-2 py-1 text-sm text-gray-300 focus:outline-none';
 
   return (
-    <div className="p-4 max-w-4xl">
+    <div className={`p-4 ${viewMode === 'board' ? '' : 'max-w-4xl'}`}>
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-lg font-medium text-gray-200">{t('tasks', language)}</h1>
-        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className={selectCls}>
-          <option value="">{t('allStatuses', language)}</option>
-          <option value="pending">Pending</option>
-          <option value="in_progress">In Progress</option>
-          <option value="done">Done</option>
-        </select>
+        <div className="flex items-center gap-2">
+          <div className="flex border border-matrix-border rounded overflow-hidden">
+            <button onClick={() => setViewMode('list')} className={`px-2 py-1 text-xs transition-colors ${viewMode === 'list' ? 'bg-matrix-accent/10 text-matrix-accent' : 'text-matrix-muted hover:text-gray-300'}`} title={t('list' as LangKey, language)}>☰</button>
+            <button onClick={() => setViewMode('board')} className={`px-2 py-1 text-xs transition-colors ${viewMode === 'board' ? 'bg-matrix-accent/10 text-matrix-accent' : 'text-matrix-muted hover:text-gray-300'}`} title={t('board' as LangKey, language)}>◫</button>
+          </div>
+          {viewMode === 'list' && (
+            <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className={selectCls}>
+              <option value="">{t('allStatuses', language)}</option>
+              <option value="pending">Pending</option>
+              <option value="in_progress">In Progress</option>
+              <option value="done">Done</option>
+            </select>
+          )}
+        </div>
       </div>
 
+      {viewMode === 'board' ? (
+        <TaskBoard />
+      ) : (<>
       {plans && plans.length > 0 && (
         addingTask ? (
           <form onSubmit={e => { e.preventDefault(); if (!newTitle.trim() || !newPlanId) return; createTask.mutate({ planId: Number(newPlanId), title: newTitle.trim(), description: newTaskDescription.trim() || undefined }); setNewTitle(''); setNewTaskDescription(''); setNewPlanId(''); setAddingTask(false); }} className="flex flex-col gap-2 mb-4">
@@ -135,7 +148,7 @@ export function TasksView() {
           </form>
         ) : (
           <div className="mb-4">
-            <button onClick={() => setAddingTask(true)} className="text-xs text-matrix-muted/50 hover:text-matrix-accent transition-colors">+ {t('tasks', language)}</button>
+            <button onClick={() => setAddingTask(true)} className="text-xs text-gray-500 hover:text-matrix-accent transition-colors">+ {t('tasks', language)}</button>
           </div>
         )
       )}
@@ -180,18 +193,18 @@ export function TasksView() {
                 ) : (
                   <>
                     <div className="flex items-center gap-2">
-                      <span className="text-matrix-muted/30">⋮⋮</span>
+                      <span className="text-gray-600">⋮⋮</span>
                       <button onClick={() => updateTask.mutate({ id: task.id, status: nextStatus[task.status] })} className={`text-sm ${statusColors[task.status]}`} title={task.status}>{statusIcons[task.status]}</button>
                       <span className={`flex-1 text-sm ${task.status === 'done' ? 'line-through text-gray-600' : 'text-gray-300'}`}>{task.title}</span>
                       <select value={task.priority} onChange={e => updateTask.mutate({ id: task.id, priority: e.target.value })} className="bg-matrix-bg border border-matrix-border rounded px-1.5 py-0.5 text-[10px] text-matrix-muted focus:outline-none cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity"><option value="low">{t('low', language)}</option><option value="medium">{t('medium', language)}</option><option value="high">{t('high', language)}</option><option value="urgent">{t('urgent', language)}</option></select>
                       <span className={`text-[10px] ${priorityColors[task.priority]} group-hover:hidden`}>{t(task.priority as any, language)}</span>
                       {task.deadline && <span className="text-xs text-matrix-muted">{task.deadline}</span>}
                       <span className="inline-flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onClick={() => startEdit(task)} className="text-[10px] text-matrix-muted/50 hover:text-matrix-accent transition-colors" title="Edit">✎</button>
-                        <button onClick={() => deleteTask.mutate(task.id)} className="text-[10px] text-matrix-muted/50 hover:text-matrix-danger transition-colors" title="Delete">✕</button>
+                        <button onClick={() => startEdit(task)} className="text-[10px] text-gray-500 hover:text-matrix-accent transition-colors" title="Edit">✎</button>
+                        <button onClick={() => deleteTask.mutate(task.id)} className="text-[10px] text-gray-500 hover:text-matrix-danger transition-colors" title="Delete">✕</button>
                       </span>
                     </div>
-                    {task.description && <span className="text-xs text-matrix-muted/60 ml-6 whitespace-pre-wrap">{task.description}</span>}
+                    {task.description && <span className="text-xs text-gray-500 ml-6 whitespace-pre-wrap">{task.description}</span>}
                   </>
                 )}
               </div>
@@ -199,6 +212,7 @@ export function TasksView() {
           </div>
         </div>
       ))}
+      </>)}
     </div>
   );
 }

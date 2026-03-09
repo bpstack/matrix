@@ -29,7 +29,7 @@ export function useTasks(filters?: { planId?: number; status?: string }) {
 export function useCreateTask() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: { planId: number; title: string; description?: string; priority?: string; deadline?: string }) =>
+    mutationFn: (data: { planId: number; title: string; description?: string; status?: string; priority?: string; deadline?: string }) =>
       apiFetch('/tasks', { method: 'POST', body: JSON.stringify(data) }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['tasks'] });
