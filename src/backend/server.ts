@@ -1,5 +1,11 @@
 import express from 'express';
 import { healthRouter } from './routes/health.routes';
+import { missionRouter } from './routes/mission.routes';
+import { objectivesRouter } from './routes/objectives.routes';
+import { plansRouter } from './routes/plans.routes';
+import { tasksRouter } from './routes/tasks.routes';
+import { settingsRouter } from './routes/settings.routes';
+import { projectsRouter } from './routes/projects.routes';
 
 const app = express();
 
@@ -17,6 +23,12 @@ app.use((_req, res, next) => {
 });
 
 app.use('/api', healthRouter);
+app.use('/api', missionRouter);
+app.use('/api', objectivesRouter);
+app.use('/api', plansRouter);
+app.use('/api', tasksRouter);
+app.use('/api', settingsRouter);
+app.use('/api', projectsRouter);
 
 app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   const message = err instanceof Error ? err.message : 'Internal server error';
