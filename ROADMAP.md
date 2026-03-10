@@ -434,11 +434,9 @@ Panel lateral derecho visible en pantallas xl+ (1280px+), 288px de ancho. Muestr
 > - **System Status**: API server, DB, sync, backups → health checks reales
 > - **Motivational Quote**: rotación diaria de citas → podría ser configurable o AI-generated
 
-| Tab | Widgets mock |
-|-----|-------------|
 | Overview | Daily Focus, Upcoming Deadlines, Productivity Streak, Daily Quote |
 | Tasks | Productivity Streak, Weekly Burndown, Upcoming Deadlines |
-| Projects | Tech Radar, Dependencies Health, System Status |
+| Projects | Tech Radar, Dependencies Health, System Status, Dev Feed |
 | Ideas | Idea Funnel, Top Scored Ideas, Daily Quote |
 | Analytics | Key Metrics, Weekly Trends, Productivity Streak |
 | Settings | Keyboard Shortcuts, System Status, Daily Quote |
@@ -513,7 +511,117 @@ Stats: ✅
 
 ## Phase 7: Polish + Distribution
 
-- Notifications (deadline reminders, daily briefing)
+### 7.1 Online Daily Quote (API Integration)
+
+Reemplazar el array estático de citas en `RightPanel.tsx` con fetching desde una API externa.
+
+**API a utilizar:**
+- **Primary**: `https://zenquotes.io/api/random` (gratuita, sin API key, rate limit generoso)
+- **Fallback**: API local con citas hardcodeadas si falla la request
+
+**Comportamiento:**
+- Fetch de una cita nueva cada vez que el usuario inicia sesión (abre la app)
+- Cachear la cita en localStorage con timestamp para no re-fetch si se abre la app múltiples veces en el mismo día
+- Si la API falla, usar fallback local (citas hardcodeadas rotando por índice)
+
+**Riesgos y complejidad:**
+
+| Aspecto | Nivel | Descripción |
+|---------|-------|-------------|
+| Conectividad | Medio | Requiere internet; manejar offline gracefully |
+| Rate limiting | Bajo | zenquotes.io tiene límite amplio, pero implementar retry con backoff |
+| Latencia | Bajo | La request es rápida (~200ms), pero debe ser no-bloqueante |
+| Privacidad | Bajo | No se envía información sensible, solo se recibe texto |
+| Offline fallback | Requerido | Si no hay conexión, mostrar cita local (array actual) |
+| Error handling | Requerido | Timeout de 5s, si falla usar fallback |
+
+**Implementación sugerida:**
+
+1. **Nuevo hook** `useDailyQuote()` en `src/frontend/hooks/useDailyQuote.ts`:
+   - Check localStorage por fecha actual
+   - Si no hay cita hoy → fetch a zenquotes.io
+   - Si fetch falla → usar array fallback con índice basado en fecha
+   - Devolver `{ quote: string, author: string, isLoading: boolean }`
+
+2. **Modificar** `RightPanel.tsx`:
+   - Importar `useDailyQuote()` 
+   - Reemplazar `QUOTES[Math.floor(Date.now() / 86400000) % QUOTES.length]` por datos del hook
+   - Mostrar loading state (skeleton) mientras carga
+
+3. **Cache en localStorage**:
+   ```ts
+   {
+     date: "2026-03-10",
+     quote: "...",
+     author: "..."
+   }
+   ```
+
+**APIs alternativas** (si zenquotes.io no funciona):
+- `https://api.quotable.io/random` (puede tener rate limits más estrictos)
+- `https://quotesondesign.com/wp-json/wp/v2/posts/?orderby=rand`
+- Array local expandido (20-50 citas) como fallback definitivo
+
+---
+
+### 7.2 Developer APIs (Hacker News + GitHub Trending)
+
+Complementar la sidebar derecha con APIs orientadas a desarrolladores.
+
+**APIs a utilizar:**
+- **Hacker News**: `https://hacker-news.firebaseio.com/v0/topstories.json` + `https://hacker-news.firebaseio.com/v0/item/{id}.json`
+- **GitHub Trending**: `https://api.github.com/search/repositories?q=created:>${lastWeek}&sort=stars&order=desc` (sin auth, rate limit 60/hr)
+- **Fallback**: Cache local con TTL de 1 hora si falla la request
+
+**Widgets a mostrar:**
+- **Top Stories (HN)**: 5 titulares de Hacker News con link externo
+- **GitHub Trending**: 5 repositorios populares de la semana
+
+**Comportamiento:**
+- Fetch al cargar la app solo si el cache tiene más de 1 hora
+- Mostrar skeleton mientras carga
+- Si falla, usar cache antiguo (no bloquear UI)
+- Links abiertos en navegador externo (Electron shell.openExternal)
+
+**Riesgos y complejidad:**
+
+| Aspecto | Nivel | Descripción |
+|---------|-------|-------------|
+| Conectividad | Medio | Requiere internet; manejar offline gracefully |
+| Rate limiting | Medio | GitHub: 60 requests/hr sin auth, implementar cache agresivo |
+| Latencia | Medio | HN es rápido (~100ms), GitHub puede tardar ~500ms |
+| Privacidad | Bajo | Solo se reciben datos públicos |
+| Error handling | Requerido | Timeout 5s, si falla usar cache o mostrar estado offline |
+| Seguridad | Requerido | Sanitizar HTML de titulares, no usar innerHTML directo |
+
+**Implementación sugerida:**
+
+1. **Nuevo hook** `useDevFeed()` en `src/frontend/hooks/useDevFeed.ts`:
+   - Check localStorage por cache con timestamp
+   - Si cache vacío o expirado (>1h) → fetch HN + GitHub en paralelo
+   - Devolver `{ hnStories: [], trendingRepos: [], isLoading: boolean, lastUpdated: Date }`
+
+2. **Nuevo componente** `DevFeed.tsx`:
+   - Sección "Hacker News" con lista de 5 titulares (título + dominio)
+   - Sección "GitHub Trending" con lista de 5 repos (nombre + estrellas + descripción truncada)
+   - Links con `target="_blank"` o `shell.openExternal()`
+
+3. **Cache en localStorage**:
+   ```ts
+   {
+     hnStories: [{ id, title, url, domain, time }],
+     trendingRepos: [{ name, full_name, description, stargazers_count, html_url }],
+     fetchedAt: "2026-03-10T14:30:00Z"
+   }
+   ```
+
+4. **Modificar** `RightPanel.tsx`:
+   - Importar `useDevFeed()` y `DevFeed`
+   - Reemplazar widgets mock por datos reales donde corresponda
+
+---
+
+### 7.3 Notifications (deadline reminders, daily briefing)
 - Keyboard shortcuts globales
 - Export/import data (JSON backup)
 - Auto-updater (Electron)
