@@ -6,6 +6,7 @@ declare global {
       onThemeChange?: (callback: (theme: string) => void) => void;
       selectDirectory: () => Promise<string | null>;
       openDirectory: (path: string) => Promise<void>;
+      selectImportFile: () => Promise<string | null>;
     };
   }
 }

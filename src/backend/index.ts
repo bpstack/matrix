@@ -133,6 +133,21 @@ const createWindow = (): void => {
   if (!app.isPackaged) {
     mainWindow.webContents.openDevTools();
   }
+
+  // Native right-click context menu for all input/text fields
+  mainWindow.webContents.on('context-menu', (_event, params) => {
+    const menu = Menu.buildFromTemplate([
+      { role: 'undo', enabled: params.editFlags.canUndo },
+      { role: 'redo', enabled: params.editFlags.canRedo },
+      { type: 'separator' },
+      { role: 'cut', enabled: params.editFlags.canCut },
+      { role: 'copy', enabled: params.editFlags.canCopy },
+      { role: 'paste', enabled: params.editFlags.canPaste },
+      { type: 'separator' },
+      { role: 'selectAll', enabled: params.editFlags.canSelectAll },
+    ]);
+    menu.popup();
+  });
 };
 
 app.on('ready', () => {
@@ -154,6 +169,16 @@ app.on('ready', () => {
       const { shell } = require('electron');
       shell.openPath(dirPath);
     }
+  });
+
+  ipcMain.handle('select-import-file', async () => {
+    const result = await dialog.showOpenDialog(mainWindow!, {
+      properties: ['openFile'],
+      filters: [{ name: 'Password Files', extensions: ['csv', 'txt'] }],
+      title: 'Select password file to import',
+    });
+    if (result.canceled || !result.filePaths[0]) return null;
+    return fs.readFileSync(result.filePaths[0], 'utf-8');
   });
 
   server = expressApp.listen(API_PORT, () => {

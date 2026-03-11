@@ -8,4 +8,5 @@ contextBridge.exposeInMainWorld('matrix', {
   },
   selectDirectory: () => ipcRenderer.invoke('select-directory'),
   openDirectory: (path: string) => ipcRenderer.invoke('open-directory', path),
+  selectImportFile: () => ipcRenderer.invoke('select-import-file'),
 });

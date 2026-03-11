@@ -7,6 +7,7 @@ import { TasksView } from '../tasks/TasksView';
 import { SettingsView } from '../settings/SettingsView';
 import { ProjectsView } from '../projects/ProjectsView';
 import { IdeasView } from '../ideas/IdeasView';
+import PasswordsView from '../passwords/PasswordsView';
 import { RightPanel } from './RightPanel';
 
 export function AppShell() {
@@ -25,15 +26,7 @@ export function AppShell() {
       case 'settings':
         return <SettingsView />;
       case 'passwords':
-        return (
-          <div className="flex items-center justify-center h-full text-matrix-muted">
-            <div className="text-center">
-              <span className="text-4xl mb-3 block">🔒</span>
-              <h2 className="text-lg font-medium text-gray-300 mb-1">{t('passwords', language)}</h2>
-              <p className="text-sm">{t('comingSoon', language)}</p>
-            </div>
-          </div>
-        );
+        return <PasswordsView />;
       default:
         return (
           <div className="flex items-center justify-center h-full text-matrix-muted">

@@ -34,18 +34,14 @@ export function Sidebar() {
       <nav className="flex-1 py-1">
         {tabs.map(({ key, icon }) => {
           const isActive = activeTab === key;
-          const disabled = key === 'passwords';
           return (
             <button
               key={key}
-              onClick={() => !disabled && setActiveTab(key)}
-              disabled={disabled}
+              onClick={() => setActiveTab(key)}
               className={`w-full flex items-center gap-2.5 px-3 py-1.5 text-sm transition-colors ${
                 isActive
                   ? 'bg-matrix-accent/10 text-matrix-accent'
-                  : disabled
-                    ? 'text-gray-600 cursor-not-allowed'
-                    : 'text-matrix-muted hover:text-matrix-accent hover:bg-matrix-accent/5'
+                  : 'text-matrix-muted hover:text-matrix-accent hover:bg-matrix-accent/5'
               }`}
             >
               <span className="text-sm">{icon}</span>
