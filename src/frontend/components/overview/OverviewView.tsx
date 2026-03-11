@@ -381,6 +381,7 @@ function StrategicSchemaActive() {
   const deleteTask = useDeleteTask();
 
   const [editing, setEditing] = useState<string | null>(null); // "mission", "obj-3", "plan-5", "task-7"
+  const [editDrafts, setEditDrafts] = useState<Record<string, { title?: string; description?: string }>>({});
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null); // same key pattern
   const [addingObj, setAddingObj] = useState(false);
   const [newObjTitle, setNewObjTitle] = useState('');
@@ -409,7 +410,16 @@ function StrategicSchemaActive() {
       {/* Mission */}
       <div className="group flex items-center justify-between mb-1 border-l-2 border-matrix-accent pl-2">
         {editing === 'mission' ? (
-          <InlineEdit value={mission.title} onSave={title => { updateMission.mutate({ id: mission.id, title }); setEditing(null); }} onCancel={() => setEditing(null)} />
+          <div className="flex-1 space-y-1">
+            <InlineEdit value={mission.title} onSave={title => { updateMission.mutate({ id: mission.id, title }); setEditing(null); }} onCancel={() => setEditing(null)} />
+            <textarea
+              value={mission.description || ''}
+              onChange={e => updateMission.mutate({ id: mission.id, description: e.target.value || undefined })}
+              placeholder="Description (optional)..."
+              className="w-full text-xs bg-matrix-bg border border-matrix-border rounded px-2 py-1 text-gray-300 placeholder-matrix-muted/50 focus:outline-none focus:border-matrix-accent/40 resize-none"
+              rows={2}
+            />
+          </div>
         ) : (
           <span className="text-sm font-medium text-gray-200">{mission.title}</span>
         )}
@@ -424,7 +434,7 @@ function StrategicSchemaActive() {
           )}
         </div>
       </div>
-      {mission.description && <p className="text-xs text-matrix-muted mb-1.5">{mission.description}</p>}
+      {!editing && mission.description && <p className="text-xs text-matrix-muted mb-1.5">{mission.description}</p>}
       <div className="flex items-center gap-2 mb-3">
         <span className="text-xs font-semibold text-matrix-accent uppercase tracking-wider">Meta</span>
         <div className="flex-1"><ProgressBar value={mission.progress} /></div>
@@ -442,9 +452,21 @@ function StrategicSchemaActive() {
                 <div className="flex-1 min-w-0">
                   {editing === objKey ? (
                     <div className="space-y-1">
-                      <input value={obj.title} onChange={e => updateObjective.mutate({ id: obj.id, title: e.target.value })} className="bg-matrix-bg border border-matrix-accent/40 rounded px-2 py-0.5 text-sm text-gray-200 focus:outline-none w-full" />
-                      <textarea value={obj.description || ''} onChange={e => updateObjective.mutate({ id: obj.id, description: e.target.value || undefined })} placeholder="Description (optional)..." className="w-full text-xs bg-matrix-bg border border-matrix-border rounded px-2 py-1 text-gray-300 placeholder-matrix-muted/50 focus:outline-none focus:border-matrix-accent resize-none" rows={2} />
-                      <button onClick={() => setEditing(null)} className="text-xs text-matrix-muted hover:text-gray-200">Done</button>
+                      <input 
+                        value={editDrafts[objKey]?.title ?? obj.title} 
+                        onChange={e => setEditDrafts(d => ({ ...d, [objKey]: { ...d[objKey], title: e.target.value } }))} 
+                        onBlur={() => { updateObjective.mutate({ id: obj.id, title: editDrafts[objKey]?.title ?? obj.title }); setEditing(null); }}
+                        className="bg-matrix-bg border border-matrix-accent/40 rounded px-2 py-0.5 text-sm text-gray-200 focus:outline-none w-full" 
+                      />
+                      <textarea 
+                        value={editDrafts[objKey]?.description ?? obj.description ?? ''} 
+                        onChange={e => setEditDrafts(d => ({ ...d, [objKey]: { ...d[objKey], description: e.target.value } }))} 
+                        onBlur={() => { updateObjective.mutate({ id: obj.id, description: editDrafts[objKey]?.description ?? obj.description ?? undefined }); setEditing(null); }}
+                        placeholder="Description (optional)..." 
+                        className="w-full text-xs bg-matrix-bg border border-matrix-border rounded px-2 py-1 text-gray-300 placeholder-matrix-muted/50 focus:outline-none focus:border-matrix-accent resize-none" 
+                        rows={2} 
+                      />
+                      <button onClick={() => { updateObjective.mutate({ id: obj.id, title: editDrafts[objKey]?.title ?? obj.title, description: editDrafts[objKey]?.description ?? obj.description ?? undefined }); setEditing(null); }} className="text-xs text-matrix-muted hover:text-gray-200">Done</button>
                     </div>
                   ) : (
                     <span className="text-sm text-gray-300 block truncate">{obj.title}</span>
@@ -459,7 +481,7 @@ function StrategicSchemaActive() {
                 </div>
                 <span className="text-[10px] font-mono text-matrix-muted/60 ml-1">{obj.progress}%</span>
                 <ActionButtons
-                  onEdit={() => setEditing(objKey)}
+                  onEdit={() => { setEditing(objKey); setEditDrafts(d => ({ ...d, [objKey]: { title: obj.title, description: obj.description || '' } })); }}
                   onDelete={() => confirmDelete(objKey, () => deleteObjective.mutate({ id: obj.id, action: 'cascade' }))}
                   deleteLabel={deleteConfirm === objKey ? '?' : '✕'}
                 />

@@ -1,4 +1,4 @@
-# Matrix — Roadmap
+﻿# Matrix — Roadmap
 
 > Proyecto simplificado extraído de matrix-v2. Migración modular: una feature a la vez,
 > simplificando donde matrix-v2 era innecesariamente complejo.
@@ -488,106 +488,628 @@ Stats: ✅
 
 ## Phase 5: Passwords + Security
 
-You are helping me develop a local desktop application using Electron.
+Módulo de passwords 100% local. Protegido con master password, cifrado AES-256-GCM individual por entry, CRUD completo, import TXT/CSV con preview editable, y búsqueda instantánea. Zero dependencias externas de crypto.
 
-Context:
+### Diseño de seguridad
 
-* The app runs completely locally.
-* There is no global authentication system.
-* I want to create a protected module called "Passwords".
+**Flujo criptográfico:**
+```
+Master Password (input del usuario)
+  ├─ PBKDF2(password, salt_auth, 600k iterations, sha512) → auth_hash  [verificar login]
+  └─ PBKDF2(password, salt_enc,  600k iterations, sha512) → enc_key    [cifrar/descifrar]
 
-Goal:
-Create a clean and modular "Passwords" module inside my Electron application.
+Cada entry en DB:
+  plaintext → AES-256-GCM(enc_key, random_iv) → "base64(iv):base64(authTag):base64(ciphertext)"
+```
 
-Requirements:
+**Principios:**
+- `auth_hash` + `salt_auth` + `salt_enc` → guardados en tabla `settings` (keys: `passwords_auth_hash`, `passwords_salt_auth`, `passwords_salt_enc`)
+- La master password **nunca se almacena** — solo su hash PBKDF2
+- La `enc_key` vive **solo en memoria** del proceso Node.js — nunca en disco, nunca en renderer
+- Al hacer lock, el Buffer de `enc_key` se limpia con `.fill(0)` antes de setear a `null` (evita residuos en heap)
+- `label`, `domain`, `username` → en claro (necesario para búsqueda SQL LIKE)
+- `password` y `notes` → cifrados con AES-256-GCM + IV aleatorio por entry
+- `getAll` **NO** descifra passwords — solo devuelve metadatos. El descifrado es bajo demanda vía `getById`
+- Auto-lock al cambiar de tab Y por inactividad (5 min configurable): la `enc_key` se destruye de memoria
+- Clipboard se limpia automáticamente a los 30 segundos tras copiar
 
-1. Access Protection
+**Advertencia para mostrar en UI:**
+> "Esta vault es local y no reemplaza a un password manager dedicado (Bitwarden, 1Password). Si alguien accede al archivo `.db`, puede ver dominios y usernames — las contraseñas sí están cifradas."
 
-* The module must require a password before accessing it.
-* The password must NOT be hardcoded.
-* The password hash must be stored in a file called `settings.json`.
+---
 
-2. Password Security
+### Tabla `passwords`
 
-* The password must be stored as a SHA-256 hash.
-* The validation logic must hash the user input and compare it with the stored hash.
-* Never store the password in plaintext.
+```sql
+CREATE TABLE IF NOT EXISTS passwords (
+  id                 INTEGER PRIMARY KEY AUTOINCREMENT,
+  label              TEXT NOT NULL,               -- nombre descriptivo: "Gmail personal", "API OpenAI"
+  domain             TEXT,                        -- sitio/URL (opcional)
+  username           TEXT,                        -- email o username (opcional)
+  encrypted_password TEXT NOT NULL,               -- "base64(iv):base64(authTag):base64(ciphertext)"
+  category           TEXT NOT NULL DEFAULT 'other', -- email|social|dev|finance|gaming|work|other
+  favorite           INTEGER NOT NULL DEFAULT 0,  -- 0|1 — permite pin/favoritos para acceso rápido
+  notes              TEXT,                        -- notas adicionales (opcional, también cifradas)
+  created_at         TEXT NOT NULL,
+  updated_at         TEXT NOT NULL
+)
+```
 
-3. Project Structure
-   Create a modular structure like this:
+---
 
-Backend:
-├── db/schema.ts           → + tabla passwords
-├── db/migrate.ts          → + migración passwords
-├── repositories/passwords.repository.ts  (nuevo)
-├── controllers/passwords.controller.ts   (nuevo)
-├── routes/passwords.routes.ts            (nuevo)
-└── server.ts            → + router passwords
-Frontend:
-├── components/passwords/PasswordsView.tsx (nuevo)
-├── hooks/usePasswords.ts                  (nuevo)
-└── components/layout/Sidebar.tsx          → + tab Passwords
+### 5.1 Schema + Migration
 
-4. UI Behavior
-   The Passwords module must contain:
+**Archivos a modificar:**
+- `src/backend/db/schema.ts` — añadir tabla `passwords` con Drizzle (mismo patrón que `activity_log`)
+- `src/backend/db/migrate.ts` — añadir `CREATE TABLE IF NOT EXISTS passwords`
 
-Step 1 – Locked screen
+```typescript
+// En schema.ts — añadir al final:
+export const passwords = sqliteTable('passwords', {
+  id:                integer('id').primaryKey({ autoIncrement: true }),
+  label:             text('label').notNull(),
+  domain:            text('domain'),
+  username:          text('username'),
+  encryptedPassword: text('encrypted_password').notNull(),
+  category:          text('category').notNull().default('other'),
+  favorite:          integer('favorite').notNull().default(0),
+  notes:             text('notes'),
+  createdAt:         text('created_at').notNull(),
+  updatedAt:         text('updated_at').notNull(),
+});
+```
 
-* Password input
-* Unlock button
-* Error message if password is incorrect
+---
 
-Step 2 – Unlocked view
+### 5.2 Crypto Engine *(nuevo — paralelo con 5.1)*
 
-* Search bar
-* Table listing passwords with columns:
-  domain
-  username
-  password
+**Archivo nuevo:** `src/backend/engines/crypto.ts`
 
-5. Database
-   Use SQLite locally to store the passwords.
+Usa **solo** `node:crypto` (built-in de Node.js — zero install).
 
-Table structure:
+```typescript
+import { randomBytes, pbkdf2Sync, createCipheriv, createDecipheriv, timingSafeEqual } from 'node:crypto';
 
-passwords
+const PBKDF2_ITERATIONS = 600_000; // OWASP 2023+ recommendation for SHA-512
+const PBKDF2_KEYLEN     = 32;      // 256 bits
+const PBKDF2_DIGEST     = 'sha512';
 
-* id
-* domain
-* username
-* password
+// --- AUTH ---
+export function deriveAuthHash(masterPassword: string): { salt: string; hash: string } {
+  const saltBuf = randomBytes(32);
+  const hashBuf = pbkdf2Sync(masterPassword, saltBuf, PBKDF2_ITERATIONS, PBKDF2_KEYLEN, PBKDF2_DIGEST);
+  return { salt: saltBuf.toString('base64'), hash: hashBuf.toString('base64') };
+}
 
-6. Import Feature
-   Include a function to import a TXT file with thousands of lines and automatically insert them into the database.
+export function verifyAuthHash(masterPassword: string, storedSalt: string, storedHash: string): boolean {
+  const saltBuf = Buffer.from(storedSalt, 'base64');
+  const derived  = pbkdf2Sync(masterPassword, saltBuf, PBKDF2_ITERATIONS, PBKDF2_KEYLEN, PBKDF2_DIGEST);
+  // timingSafeEqual previene timing attacks — NUNCA comparar hashes con ===
+  return timingSafeEqual(derived, Buffer.from(storedHash, 'base64'));
+}
 
-Example format:
+// --- ENCRYPTION KEY ---
+export function generateEncSalt(): string { return randomBytes(32).toString('base64'); }
 
-domain:username:password
+export function deriveEncryptionKey(masterPassword: string, storedSalt: string): Buffer {
+  const saltBuf = Buffer.from(storedSalt, 'base64');
+  return pbkdf2Sync(masterPassword, saltBuf, PBKDF2_ITERATIONS, PBKDF2_KEYLEN, PBKDF2_DIGEST);
+}
 
-The import function should:
+// --- AES-256-GCM ---
+export function encrypt(plaintext: string, key: Buffer): string {
+  const iv         = randomBytes(12); // 96-bit IV para GCM
+  const cipher     = createCipheriv('aes-256-gcm', key, iv);
+  const ciphertext = Buffer.concat([cipher.update(plaintext, 'utf8'), cipher.final()]);
+  const authTag    = cipher.getAuthTag();
+  return `${iv.toString('base64')}:${authTag.toString('base64')}:${ciphertext.toString('base64')}`;
+}
 
-* read the file
-* split lines
-* parse entries
-* insert into SQLite.
+export function decrypt(encrypted: string, key: Buffer): string {
+  const [ivB64, tagB64, ctB64] = encrypted.split(':');
+  if (!ivB64 || !tagB64 || !ctB64) throw new Error('Invalid encrypted format');
+  const decipher = createDecipheriv('aes-256-gcm', key, Buffer.from(ivB64, 'base64'));
+  decipher.setAuthTag(Buffer.from(tagB64, 'base64'));
+  return decipher.update(Buffer.from(ctB64, 'base64')) + decipher.final('utf8');
+}
+```
 
-7. Security Warning
-   Add comments explaining that:
+> **Test manual**: `encrypt("mi_pass", key)` → string cifrado. `decrypt(ese_string, key)` → `"mi_pass"`. Con key distinta → lanza error (authTag falla). Verificar antes de continuar.
 
-* Even if the app runs locally, hashes and database files can still be inspected.
-* Suggest stronger practices like bcrypt and encrypted vaults.
+---
 
-Output requirements:
+### 5.3 Repository *(nuevo — depends on 5.1)*
 
-Generate:
+**Archivo nuevo:** `src/backend/repositories/passwords.repository.ts`
 
-* the folder structure
-* the code for each file
-* explanations of how the module integrates into Electron
-* example code showing how to load the module from the main app
+Patrón: igual que `settings.repository.ts`. Solo queries Drizzle, sin lógica de negocio.
 
+```typescript
+// Métodos:
+findAll(category?: string): PasswordRow[]                   // ORDER BY favorite DESC, label ASC. Filtro opcional por category
+findById(id: number): PasswordRow | undefined
+search(query: string, category?: string): PasswordRow[]     // OR LIKE en label, domain, username + filtro category
+findByDomainAndUsername(domain: string, username: string): PasswordRow | undefined
+create(data: NewPassword): PasswordRow
+update(id: number, data: Partial<NewPassword>): PasswordRow
+delete(id: number): void
+bulkCreate(entries: NewPassword[]): { inserted: number }    // en transacción SQLite
+count(): number
+```
 
-Refactor this module using a service layer and IPC communication between renderer and main process.
+Para `search`, usar `or(like(...), like(...), like(...))` de drizzle-orm.
+
+Para `bulkCreate`, usar `getDb().transaction(...)` de better-sqlite3 para atomicidad.
+
+---
+
+### 5.4 Import TXT/CSV Parser *(nuevo — paralelo con 5.3)*
+
+**Archivo nuevo:** `src/backend/engines/import-parser.ts`
+
+```typescript
+export interface ParsedEntry {
+  lineNumber: number; raw: string;
+  label: string; domain?: string; username?: string; password: string;
+  confidence: 'high' | 'medium' | 'low';
+}
+export interface UnmatchedLine { lineNumber: number; raw: string; reason: string; }
+export interface ParseResult   { parsed: ParsedEntry[]; unmatched: UnmatchedLine[]; format: 'csv' | 'txt'; }
+```
+
+**Detección de formato:**
+1. Si la primera línea contiene headers CSV comunes (`name,url,username,password` o variantes de Chrome/Firefox/Bitwarden) → modo CSV
+2. Si no → modo TXT (parsing heurístico)
+
+**Modo CSV** (formato principal — es lo que exportan Chrome, Firefox, Bitwarden, 1Password):
+- Parsear headers de la primera línea (case-insensitive, trim)
+- Mapear columnas conocidas: `name|title|label` → label, `url|website|login_uri` → domain, `username|login|email` → username, `password` → password, `notes|extra` → notes
+- Si no se detecta columna `password` → `unmatched` todo el archivo con reason "No password column detected"
+- Manejar valores con comillas (CSV estándar: campos con comas van entre `"..."`, `""` escapa comillas)
+- Todas las entries CSV → `confidence = 'high'`
+
+**Modo TXT** (fallback heurístico — para cada línea en orden de prioridad):
+
+1. Trim + skip si vacía o whitespace
+2. **Pair mode**: si la línea actual no tiene separador reconocible Y la siguiente línea parece una password (sin espacios, >6 chars) → `label = línea_actual`, `password = línea_siguiente`, marcar siguiente como consumida, `confidence = 'low'`
+3. **Separador `:`**: split en los primeros 2 `:` únicamente
+   - 2 tokens `[A, B]`: si A tiene `@` → `username=A`, `password=B`, `conf=high`; si A parece dominio → `domain=A`, `password=B`, `conf=high`; si no → `label=A`, `password=B`, `conf=medium`
+   - 3+ tokens: `label/domain=token[0]`, `username=token[1]`, `password=tokens.slice(2).join(':')`, `conf=high`
+4. **Separador `|`**: misma lógica con 2-3 tokens
+5. **Split por primer espacio**: `[A, ...rest]` — si A parece email/dominio → `username/domain=A`, `password=rest.join(' ')`, `conf=medium`
+6. **No reconocida** → `unmatched` con reason descriptivo
+
+**Heurísticas:**
+```typescript
+const isEmail  = (s: string) => s.includes('@') && s.includes('.');
+const isDomain = (s: string) => /\.(com|org|net|io|dev|app|es|co|uk|me|info)(\/|$)/i.test(s);
+const isUrl    = (s: string) => s.startsWith('http://') || s.startsWith('https://');
+```
+
+**Post-parse (ambos modos):**
+- Si `domain` es URL → extraer hostname con `new URL(domain).hostname` (en try-catch)
+- Si `label` sin asignar → usar `domain || username || 'Imported'`
+- Entries con `password` vacío → mover a `unmatched`
+
+**Función exportada:** `export function parseImportContent(content: string): ParseResult`
+
+---
+
+### 5.5 Controller *(nuevo — depends on 5.2, 5.3, 5.4)*
+
+**Archivo nuevo:** `src/backend/controllers/passwords.controller.ts`
+
+**Variable de módulo (encryption key en memoria):**
+```typescript
+// Al inicio del archivo — vive solo en proceso Node.js, nunca en disco
+let encryptionKey: Buffer | null = null;
+let inactivityTimer: ReturnType<typeof setTimeout> | null = null;
+const INACTIVITY_TIMEOUT_MS = 5 * 60 * 1000; // 5 min — configurable vía settings
+
+function resetInactivityTimer() {
+  if (inactivityTimer) clearTimeout(inactivityTimer);
+  if (encryptionKey) {
+    inactivityTimer = setTimeout(() => lockVault(), INACTIVITY_TIMEOUT_MS);
+  }
+}
+
+function lockVault() {
+  if (encryptionKey) encryptionKey.fill(0); // limpiar de heap antes de soltar referencia
+  encryptionKey = null;
+  if (inactivityTimer) { clearTimeout(inactivityTimer); inactivityTimer = null; }
+}
+```
+
+**Middleware:**
+```typescript
+function requireUnlocked(req: Request, res: Response, next: NextFunction) {
+  if (!encryptionKey) return res.status(401).json({ error: 'Vault is locked' });
+  next();
+}
+```
+
+**Endpoints:**
+
+| Endpoint | Lógica |
+|----------|--------|
+| `isSetup` | Leer `passwords_auth_hash` de settings → `{ isSetup: !!hash, isUnlocked: !!encryptionKey }` |
+| `setup` | Zod: `{ masterPassword: string min(8) }`. `deriveAuthHash()` → settings `passwords_auth_hash` + `passwords_salt_auth`. `generateEncSalt()` → settings `passwords_salt_enc`. Responde `{ ok: true }` |
+| `unlock` | Zod: `{ masterPassword }`. Leer `passwords_salt_auth` de settings. Verificar con `verifyAuthHash()` → si falla, 401. `deriveEncryptionKey()` → asignar `encryptionKey`. Iniciar `resetInactivityTimer()`. Responde `{ ok: true }` |
+| `lock` | `lockVault()` (fill(0) + null). Responde `{ ok: true }` |
+| `getAll` | `requireUnlocked`. `resetInactivityTimer()`. Leer `req.query.search` y `req.query.category`. Si search → `repo.search(query)`, si category → filtrar, si no → `repo.findAll()`. Devolver **solo metadatos** (label, domain, username, category, favorite, timestamps) — **NO descifrar passwords ni notes** |
+| `getById` | `requireUnlocked`. `resetInactivityTimer()`. `repo.findById()` → 404 si no. Descifrar `encryptedPassword` y `notes`. Devolver con campos en claro |
+| `create` | `requireUnlocked`. `resetInactivityTimer()`. Zod `createSchema`. `encrypt(password)` + `encrypt(notes)`. `repo.create()`. Activity log |
+| `update` | `requireUnlocked`. `resetInactivityTimer()`. Zod `updateSchema` (partial). Si viene `password` → re-cifrar. Si viene `notes` → re-cifrar. `repo.update()` |
+| `delete` | `requireUnlocked`. `resetInactivityTimer()`. `repo.delete()`. Activity log |
+| `toggleFavorite` | `requireUnlocked`. `resetInactivityTimer()`. `repo.findById()` → toggle `favorite` 0↔1. `repo.update()` |
+| `parseImportFile` | `requireUnlocked`. `resetInactivityTimer()`. Body: `{ content: string }`. Llamar `parseImportContent()`. Devolver `{ parsed, unmatched }`. **NO inserta nada** |
+| `confirmImport` | `requireUnlocked`. `resetInactivityTimer()`. Body: `{ entries: ParsedEntry[] }`. Para cada entry: `findByDomainAndUsername()` para detectar duplicados. `encrypt(password)`. `repo.bulkCreate()`. Activity log. Responder `{ inserted, skippedDuplicates }` |
+| `changeMasterPassword` | `requireUnlocked`. `resetInactivityTimer()`. Zod: `{ currentPassword, newPassword min(8) }`. Verificar current con `passwords_salt_auth`. Obtener todas las entries → descifrar → re-cifrar con nueva key → bulk update. Generar nuevos salts (auth + enc) → guardar en settings. Asignar nueva key |
+
+**Zod schemas:**
+```typescript
+const setupSchema          = z.object({ masterPassword: z.string().min(8) });
+const unlockSchema         = z.object({ masterPassword: z.string().min(1) });
+const createSchema         = z.object({
+  label: z.string().min(1), domain: z.string().optional(), username: z.string().optional(),
+  password: z.string().min(1), category: z.enum(['email','social','dev','finance','gaming','work','other']).default('other'),
+  favorite: z.number().min(0).max(1).default(0),
+  notes: z.string().optional(),
+});
+const updateSchema         = createSchema.partial();
+const importConfirmSchema  = z.object({
+  entries: z.array(z.object({ label: z.string().min(1), domain: z.string().optional(),
+    username: z.string().optional(), password: z.string().min(1),
+    category: z.enum(['email','social','dev','finance','gaming','work','other']).default('other'),
+  }))
+});
+const changeMasterSchema   = z.object({ currentPassword: z.string().min(1), newPassword: z.string().min(8) });
+```
+
+---
+
+### 5.6 Routes *(nuevo — depends on 5.5)*
+
+**Archivo nuevo:** `src/backend/routes/passwords.routes.ts`
+
+```typescript
+import { Router } from 'express';
+import { passwordsController } from '../controllers/passwords.controller';
+
+const router = Router();
+
+// Auth + status (no requieren unlock)
+router.get('/passwords/status',          passwordsController.isSetup);
+router.post('/passwords/setup',          passwordsController.setup);
+router.post('/passwords/unlock',         passwordsController.unlock);
+router.post('/passwords/lock',           passwordsController.lock);
+
+// Import (requieren unlock — rutas literales ANTES de :id)
+router.post('/passwords/import/parse',   passwordsController.parseImportFile);
+router.post('/passwords/import/confirm', passwordsController.confirmImport);
+
+// Operaciones protegidas (requieren unlock)
+router.post('/passwords/change-master',  passwordsController.changeMasterPassword);
+router.get('/passwords',                 passwordsController.getAll);
+router.get('/passwords/:id',             passwordsController.getById);
+router.post('/passwords',                passwordsController.create);
+router.patch('/passwords/:id',           passwordsController.update);
+router.patch('/passwords/:id/favorite',  passwordsController.toggleFavorite);
+router.delete('/passwords/:id',          passwordsController.delete);
+
+export { router as passwordsRouter };
+```
+
+> ⚠️ **Orden importante**: rutas con paths literales (`/status`, `/setup`, `/import/parse`) deben registrarse **antes** de `/passwords/:id` para que Express no trate `status` como un `:id`.
+
+**En `src/backend/server.ts`** añadir:
+```typescript
+import { passwordsRouter } from './routes/passwords.routes';
+app.use('/api', passwordsRouter);
+```
+
+---
+
+### 5.7 IPC para File Picker *(modifica archivos existentes)*
+
+**En `src/backend/index.ts`** — añadir junto a los IPC handlers existentes:
+```typescript
+import { readFileSync } from 'node:fs';
+
+ipcMain.handle('select-import-file', async () => {
+  const result = await dialog.showOpenDialog({
+    properties: ['openFile'],
+    filters: [{ name: 'Password Files', extensions: ['csv', 'txt'] }],
+    title: 'Seleccionar archivo de contraseñas',
+  });
+  if (result.canceled || !result.filePaths[0]) return null;
+  // El archivo se lee en main process — el renderer nunca accede al filesystem
+  return readFileSync(result.filePaths[0], 'utf-8');
+});
+```
+
+**En `src/backend/preload.ts`** — añadir en el objeto expuesto:
+```typescript
+selectImportFile: () => ipcRenderer.invoke('select-import-file'),
+```
+
+**En `src/backend/types.d.ts`** — añadir interfaz global de `window.matrix` (actualmente solo declara electron-squirrel-startup):
+```typescript
+interface MatrixAPI {
+  apiBase: string;
+  platform: string;
+  selectDirectory: () => Promise<string | null>;
+  openDirectory: (path: string) => Promise<void>;
+  onThemeChange: (callback: (theme: string) => void) => void;
+  selectImportFile: () => Promise<string | null>; // nuevo
+}
+declare global {
+  interface Window { matrix: MatrixAPI; }
+}
+```
+
+---
+
+### 5.8 Hook *(nuevo — depends on 5.6)*
+
+**Archivo nuevo:** `src/frontend/hooks/usePasswords.ts`
+
+```typescript
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { apiFetch } from '../lib/api';
+
+// Metadatos (lo que devuelve getAll — sin password ni notes descifrados)
+export interface PasswordEntry {
+  id: number; label: string; domain?: string; username?: string;
+  category: string; favorite: number;
+  createdAt: string; updatedAt: string;
+}
+
+// Entry completa con datos descifrados (lo que devuelve getById)
+export interface PasswordEntryFull extends PasswordEntry {
+  password: string; notes?: string;
+}
+
+export function usePasswordStatus() {
+  return useQuery<{ isSetup: boolean; isUnlocked: boolean }>({
+    queryKey: ['passwords', 'status'],
+    queryFn: () => apiFetch('/passwords/status'),
+    // Sin refetchInterval — se invalida manualmente tras lock/unlock/setup
+  });
+}
+
+export function usePasswords(search?: string, category?: string, enabled = false) {
+  return useQuery<PasswordEntry[]>({
+    queryKey: ['passwords', 'list', search, category],
+    queryFn: () => {
+      const params = new URLSearchParams();
+      if (search)   params.set('search', search);
+      if (category && category !== 'all') params.set('category', category);
+      return apiFetch(`/passwords?${params}`);
+    },
+    enabled,
+  });
+}
+
+// Mutations a implementar siguiendo patrón useIdeas.ts:
+// useSetupMaster, useUnlockVault, useLockVault,
+// useCreatePassword, useUpdatePassword, useDeletePassword,
+// useToggleFavorite, useParseImport, useConfirmImport, useChangeMasterPassword
+// Todas con onSuccess → invalidateQueries(['passwords', ...])
+// useUnlockVault y useLockVault deben también invalidar ['passwords', 'status']
+// useGetPasswordById(id) → apiFetch(`/passwords/${id}`) para descifrado bajo demanda
+```
+
+---
+
+### 5.9 PasswordsView — 3 estados *(nuevo — depends on 5.8)*
+
+**Archivo nuevo:** `src/frontend/components/passwords/PasswordsView.tsx`
+
+**Estructura controlada por `usePasswordStatus()`:**
+```
+status.isSetup === false      →  <SetupScreen />
+status.isSetup && !isUnlocked →  <LockScreen />
+status.isUnlocked             →  <VaultView />
+```
+
+**`<SetupScreen />`:**
+- Input "Master Password" + Input "Confirmar"
+- Indicador de fuerza por colores: rojo <8 chars → amarillo 8-11 → verde ≥12
+- Botón deshabilitado si no coinciden o <8 chars
+- Advertencia: "Esta contraseña no se puede recuperar. Guárdala fuera de la app."
+
+**`<LockScreen />`:**
+- Icono 🔒 grande centrado
+- Input password (Enter para submit)
+- Botón "Desbloquear" / "Unlock"
+- Error con fade-out tras 3s si falla
+
+**`<VaultView />`:**
+```
+Header: "Passwords" + badge N  |  [🔒 Bloquear]  [+ Nueva]  [↑ Importar]
+Controls: [🔍 Buscar...]  [Categoría ▼]  [★ Solo favoritos]
+Tabla: ★ | Label | Domain | Username | Password | Category | Acciones
+       ★   Gmail  | goo...  | user@... | ••••••••  | email    | 👁 📋 ✏️ 🗑
+Footer: "234 contraseñas" — ordenadas por favorite DESC, label ASC
+```
+
+**Lógica de acciones por fila:**
+- **★ Favorito**: click → `PATCH /passwords/:id/favorite` → toggle. Favoritos aparecen primero
+- **👁 Revelar**: al click → `GET /passwords/:id` (descifra bajo demanda) → mostrar 5s → auto-ocultar. No se descifra en getAll
+- **📋 Copiar**: `GET /passwords/:id` → `navigator.clipboard.writeText(password)`. Icono → "✓" 2s. `setTimeout(() => navigator.clipboard.writeText(''), 30_000)` para auto-clear
+- **✏️ Editar**: `GET /passwords/:id` → modal pre-cargado con todos los campos (incluye password y notes descifrados)
+- **🗑 Eliminar**: confirmación inline ("¿Eliminar?" + botón rojo)
+
+**Modal Crear/Editar:**
+- Campos: Label*, Domain, Username, Password* (toggle show/hide), Category (select), Notes (textarea)
+- Botón "Generar" → string aleatorio seguro de 16 chars (letras + números + símbolos)
+
+---
+
+### 5.10 Import Flow UI *(integrado en VaultView)*
+
+**Modal en 4 pasos** activado por botón "↑ Importar":
+
+**Paso 1 — Selección:**
+```
+[📁 Seleccionar archivo .csv / .txt]
+Nota: "Soporta exports de Chrome, Firefox, Bitwarden, 1Password (CSV) y archivos de texto."
+      "El archivo se lee localmente. Ningún dato sale de tu equipo."
+```
+Click → `window.matrix.selectImportFile()` → IPC → file picker nativo → `POST /api/passwords/import/parse`
+
+**Paso 2 — Parsing:** spinner "Analizando archivo..."
+
+**Paso 3 — Preview:**
+```
+234 entradas detectadas · 18 no reconocidas
+[✓ Válidas (234)]  [⚠ No reconocidas (18)]
+
+  [✓] Gmail personal   | gmail.com | user@.. | ••••  | 🟢 Alta
+  [✓] App desconocida  | —         | —       | ••••  | 🟡 Media
+  [ ] ???              | —         | —       | ••••  | 🔴 Baja  ← desmarcado por defecto
+```
+- Confianza 🔴 Baja → desmarcado por defecto
+- Celdas label/domain/username editables inline (click para editar)
+- Botón "Seleccionar todas / Ninguna"
+
+**Paso 4 — Confirmación:**
+```
+A importar: 221 · Descartadas: 13 · Duplicados detectados: 4 (se saltarán)
+[Cancelar]  [Confirmar importación →]
+→ resultado: ✓ 217 insertadas · 4 duplicados · 13 descartadas
+```
+
+---
+
+### 5.11 Sidebar + AppShell + Auto-lock
+
+**`src/frontend/stores/ui.store.ts`:**
+```typescript
+export type Tab = 'overview' | 'projects' | 'tasks' | 'ideas' | 'analytics' | 'passwords' | 'settings';
+```
+
+**`src/frontend/components/layout/Sidebar.tsx`:**
+```typescript
+{ id: 'passwords', label: t('passwords', language), icon: '🔒' }
+// Entre analytics y settings
+```
+
+**`src/frontend/components/layout/AppShell.tsx`:**
+```tsx
+case 'passwords': return <PasswordsView />;
+```
+
+**Auto-lock al salir del tab:**
+```tsx
+const prevTab = useRef(activeTab);
+useEffect(() => {
+  if (prevTab.current === 'passwords' && activeTab !== 'passwords') {
+    apiFetch('/passwords/lock', { method: 'POST' }).catch(() => {});
+    queryClient.invalidateQueries({ queryKey: ['passwords', 'status'] });
+  }
+  prevTab.current = activeTab;
+}, [activeTab]);
+```
+
+**Auto-lock por inactividad (server-side):**
+El timer de inactividad vive en el controller (§5.5). Cada endpoint protegido llama `resetInactivityTimer()`. Si pasan 5 min sin actividad, `lockVault()` se ejecuta automáticamente. El frontend detecta el cambio via `usePasswordStatus()` que retornará `isUnlocked: false` → muestra `<LockScreen />`.
+
+---
+
+### 5.12 i18n *(src/frontend/lib/i18n.ts)*
+
+```typescript
+passwords:          { en: 'Passwords',              es: 'Contraseñas' },
+vault:              { en: 'Vault',                   es: 'Bóveda' },
+setupVault:         { en: 'Setup Vault',             es: 'Configurar Bóveda' },
+masterPassword:     { en: 'Master Password',         es: 'Contraseña maestra' },
+confirmPassword:    { en: 'Confirm Password',        es: 'Confirmar contraseña' },
+unlock:             { en: 'Unlock',                  es: 'Desbloquear' },
+lock:               { en: 'Lock',                    es: 'Bloquear' },
+incorrectPassword:  { en: 'Incorrect password',      es: 'Contraseña incorrecta' },
+passwordsDontMatch: { en: 'Passwords do not match',  es: 'Las contraseñas no coinciden' },
+newPassword:        { en: 'New Password',            es: 'Nueva contraseña' },
+editPassword:       { en: 'Edit Password',           es: 'Editar contraseña' },
+generatePassword:   { en: 'Generate',                es: 'Generar' },
+showPassword:       { en: 'Show',                    es: 'Mostrar' },
+hidePassword:       { en: 'Hide',                    es: 'Ocultar' },
+copyPassword:       { en: 'Copy',                    es: 'Copiar' },
+copied:             { en: 'Copied! Clears in 30s',   es: '¡Copiado! Se borrará en 30s' },
+notes:              { en: 'Notes',                   es: 'Notas' },
+importPasswords:    { en: 'Import Passwords',        es: 'Importar contraseñas' },
+importPreview:      { en: 'Import Preview',          es: 'Vista previa de importación' },
+linesMatched:       { en: 'entries detected',        es: 'entradas detectadas' },
+linesUnmatched:     { en: 'not recognized',          es: 'no reconocidas' },
+duplicatesSkipped:  { en: 'duplicates skipped',      es: 'duplicados saltados' },
+confirmImport:      { en: 'Confirm Import',          es: 'Confirmar importación' },
+confidenceHigh:     { en: 'High',                    es: 'Alta' },
+confidenceMedium:   { en: 'Medium',                  es: 'Media' },
+confidenceLow:      { en: 'Low',                     es: 'Baja' },
+catEmail:           { en: 'Email',                   es: 'Email' },
+catSocial:          { en: 'Social',                  es: 'Social' },
+catDev:             { en: 'Dev',                     es: 'Dev' },
+catFinance:         { en: 'Finance',                 es: 'Finanzas' },
+catGaming:          { en: 'Gaming',                  es: 'Gaming' },
+catWork:            { en: 'Work',                    es: 'Trabajo' },
+catOther:           { en: 'Other',                   es: 'Otros' },
+```
+
+---
+
+### Resumen de archivos
+
+**Nuevos:**
+- `src/backend/engines/crypto.ts` — PBKDF2 + AES-256-GCM (código completo en §5.2)
+- `src/backend/engines/import-parser.ts` — parser best-effort multi-formato (§5.4)
+- `src/backend/repositories/passwords.repository.ts` — patrón: `settings.repository.ts`
+- `src/backend/controllers/passwords.controller.ts` — patrón: `ideas.controller.ts`
+- `src/backend/routes/passwords.routes.ts` — patrón: `settings.routes.ts`
+- `src/frontend/hooks/usePasswords.ts` — patrón: `useIdeas.ts`
+- `src/frontend/components/passwords/PasswordsView.tsx` — patrón: `IdeasView.tsx`
+
+**Modificados:**
+- `src/backend/db/schema.ts` — tabla `passwords`
+- `src/backend/db/migrate.ts` — `CREATE TABLE IF NOT EXISTS passwords`
+- `src/backend/server.ts` — `app.use('/api', passwordsRouter)`
+- `src/backend/index.ts` — IPC handler `select-import-file`
+- `src/backend/preload.ts` — `selectImportFile` en contextBridge
+- `src/backend/types.d.ts` — tipo `selectImportFile`
+- `src/frontend/stores/ui.store.ts` — tab type `'passwords'`
+- `src/frontend/components/layout/Sidebar.tsx` — tab Passwords 🔒
+- `src/frontend/components/layout/AppShell.tsx` — case passwords + auto-lock
+- `src/frontend/lib/i18n.ts` — ~30 keys EN/ES
+
+---
+
+### Verification
+
+1. **Crypto roundtrip**: `encrypt("test", key)` → `decrypt(result, key)` === `"test"`. Key incorrecta → throw.
+2. **Auth**: `verifyAuthHash("pass", salt, hash)` === true (usa `timingSafeEqual`). String distinto → false.
+3. **Parser CSV**: export de Chrome (`name,url,username,password`) → todas las entries con `confidence: high`. Headers case-insensitive.
+4. **Parser TXT**: probar cada formato manualmente. Líneas basura → `unmatched` con reason legible.
+5. **Flujo completo manual**:
+   - Tab Passwords → Setup screen → crear master password ≥8 chars
+   - Lock screen → desbloquear → Vault vacío
+   - Crear entry → aparece en tabla con password oculto (getAll no descifra)
+   - Revelar → `GET /passwords/:id` → visible 5s → vuelve a `••••••`
+   - Copiar → `GET /passwords/:id` → clipboard → esperar 30s → clipboard vacío
+   - Favorito → click ★ → entry sube al top de la lista
+   - Editar → guardar → tabla actualizada
+   - Eliminar → confirmación → desaparece
+   - Import CSV (Chrome export) → preview → ajustar → confirmar → resultado
+   - Import TXT → preview → ajustar → confirmar → resultado
+   - Cambiar de tab → volver → **Lock screen** (auto-lock funciona)
+   - Esperar 5 min sin actividad → **Lock screen** (inactivity lock funciona)
+   - Cerrar y reabrir → Lock screen (master persiste, vault bloqueado)
+6. **Seguridad**:
+   - `matrix.db` con DB Browser → `encrypted_password` ilegible (formato `b64:b64:b64`)
+   - `GET /api/passwords` sin unlock → `401 { error: 'Vault is locked' }`
+   - `GET /api/passwords` con unlock → **NO contiene passwords descifrados** (solo metadatos)
+   - Encryption key no aparece en archivos, localStorage, ni devtools
+   - Auth verification usa `timingSafeEqual` (no vulnerable a timing attacks)
+   - Al hacer lock, el Buffer se limpia con `fill(0)` antes de soltar referencia
 
 ---
 
