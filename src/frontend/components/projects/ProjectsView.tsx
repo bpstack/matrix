@@ -128,7 +128,7 @@ function ProjectCard({ project: p, onClick, onScan, onDelete }: { project: Proje
       </div>
 
       {/* Status */}
-      <span className={`text-xs mb-2 ${statusColors[p.status] || 'text-matrix-muted'}`}>● {p.status}</span>
+      <span className={`text-xs mb-2 ${statusColors[p.status] || 'text-matrix-muted'}`}>● {p.status.charAt(0).toUpperCase() + p.status.slice(1)}</span>
 
       {/* Description */}
       {p.description && <p className="text-xs text-matrix-muted mb-2 line-clamp-2">{p.description}</p>}

@@ -488,12 +488,106 @@ Stats: ✅
 
 ## Phase 5: Passwords + Security
 
-- Categorías de contraseñas (Personal, Work, Finance, etc.)
-- Almacenamiento cifrado (AES-256-GCM)
-- Master password con argon2 hashing
-- Generador de contraseñas (longitud, caracteres, símbolos)
-- Copy-to-clipboard con auto-clear (30 segundos)
-- Búsqueda y filtrado
+You are helping me develop a local desktop application using Electron.
+
+Context:
+
+* The app runs completely locally.
+* There is no global authentication system.
+* I want to create a protected module called "Passwords".
+
+Goal:
+Create a clean and modular "Passwords" module inside my Electron application.
+
+Requirements:
+
+1. Access Protection
+
+* The module must require a password before accessing it.
+* The password must NOT be hardcoded.
+* The password hash must be stored in a file called `settings.json`.
+
+2. Password Security
+
+* The password must be stored as a SHA-256 hash.
+* The validation logic must hash the user input and compare it with the stored hash.
+* Never store the password in plaintext.
+
+3. Project Structure
+   Create a modular structure like this:
+
+Backend:
+├── db/schema.ts           → + tabla passwords
+├── db/migrate.ts          → + migración passwords
+├── repositories/passwords.repository.ts  (nuevo)
+├── controllers/passwords.controller.ts   (nuevo)
+├── routes/passwords.routes.ts            (nuevo)
+└── server.ts            → + router passwords
+Frontend:
+├── components/passwords/PasswordsView.tsx (nuevo)
+├── hooks/usePasswords.ts                  (nuevo)
+└── components/layout/Sidebar.tsx          → + tab Passwords
+
+4. UI Behavior
+   The Passwords module must contain:
+
+Step 1 – Locked screen
+
+* Password input
+* Unlock button
+* Error message if password is incorrect
+
+Step 2 – Unlocked view
+
+* Search bar
+* Table listing passwords with columns:
+  domain
+  username
+  password
+
+5. Database
+   Use SQLite locally to store the passwords.
+
+Table structure:
+
+passwords
+
+* id
+* domain
+* username
+* password
+
+6. Import Feature
+   Include a function to import a TXT file with thousands of lines and automatically insert them into the database.
+
+Example format:
+
+domain:username:password
+
+The import function should:
+
+* read the file
+* split lines
+* parse entries
+* insert into SQLite.
+
+7. Security Warning
+   Add comments explaining that:
+
+* Even if the app runs locally, hashes and database files can still be inspected.
+* Suggest stronger practices like bcrypt and encrypted vaults.
+
+Output requirements:
+
+Generate:
+
+* the folder structure
+* the code for each file
+* explanations of how the module integrates into Electron
+* example code showing how to load the module from the main app
+
+
+Refactor this module using a service layer and IPC communication between renderer and main process.
 
 ---
 

@@ -132,7 +132,7 @@ export function ProjectDetail({ projectId, onBack }: Props) {
             <div className="flex items-center gap-3 mb-1">
               <h1 className="text-xl font-semibold text-gray-200">{project.name}</h1>
               <button onClick={cycleStatus} className={`px-2 py-0.5 text-xs rounded-full ${statusColors[project.status] || ''}`}>
-                {project.status}
+                {project.status.charAt(0).toUpperCase() + project.status.slice(1)}
               </button>
             </div>
             {project.description && <p className="text-sm text-matrix-muted">{project.description}</p>}
@@ -221,38 +221,78 @@ export function ProjectDetail({ projectId, onBack }: Props) {
         </div>
       )}
 
-      {/* Scan breakdown by file */}
-      {rawData.length > 0 && (
-        <div className="mb-6 p-4 bg-matrix-surface rounded-lg border border-matrix-border">
-          <h3 className="text-sm font-medium text-gray-300 mb-3">{t('scanBreakdown', language)}</h3>
-          <div className="space-y-2">
-            {rawData.map((f: { file: string; completedTasks: number; totalTasks: number; progressPercent: number; blockers: string[]; wipItems: string[] }) => (
-              <div key={f.file} className="flex items-center justify-between text-xs">
-                <span className="text-gray-300 font-mono">{f.file}</span>
-                <div className="flex items-center gap-3">
-                  <span className="text-matrix-muted">{f.completedTasks}/{f.totalTasks}</span>
-                  <div className="w-24 h-1.5 bg-matrix-bg rounded-full overflow-hidden">
-                    <div className="h-full bg-matrix-accent rounded-full" style={{ width: `${f.progressPercent}%` }} />
-                  </div>
-                  <span className="text-matrix-muted w-8 text-right">{f.progressPercent}%</span>
-                  {f.blockers.length > 0 && <span className="text-matrix-danger">⚠{f.blockers.length}</span>}
-                  {f.wipItems.length > 0 && <span className="text-matrix-warning">◉{f.wipItems.length}</span>}
-                </div>
+      {/* Scan breakdown + Git info side by side */}
+      {(rawData.length > 0 || ts?.lastCommit) && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+          {/* Scan breakdown */}
+          {rawData.length > 0 && (
+            <div className="p-4 bg-matrix-surface rounded-lg border border-matrix-border">
+              <h3 className="text-sm font-medium text-gray-300 mb-3">{t('scanBreakdown', language)}</h3>
+              {/* Header */}
+              <div className="flex items-center text-xs text-matrix-muted mb-2 px-1">
+                <span className="w-24">File</span>
+                <span className="w-12 text-center">Tasks</span>
+                <span className="flex-1 mx-2">Progress</span>
+                <span className="w-8 text-right">%</span>
+                <span className="w-10 text-center" title="Blockers - Issues that are blocking progress">⚠</span>
+                <span className="w-10 text-center" title="WIP - Work in progress items">◉</span>
               </div>
-            ))}
-          </div>
-        </div>
-      )}
+              <div className="space-y-1">
+                {rawData.map((f: { file: string; completedTasks: number; totalTasks: number; progressPercent: number; blockers: string[]; wipItems: string[] }) => (
+                  <div key={f.file} className="flex items-center text-xs bg-matrix-bg/50 rounded px-2 py-1.5">
+                    <span className="w-24 text-gray-300 font-mono truncate" title={f.file}>{f.file}</span>
+                    <span className="w-12 text-center text-matrix-muted">{f.completedTasks}/{f.totalTasks}</span>
+                    <div className="flex-1 mx-2">
+                      <div className="h-1 bg-matrix-border rounded-full overflow-hidden">
+                        <div className="h-full bg-matrix-accent rounded-full" style={{ width: `${f.progressPercent}%` }} />
+                      </div>
+                    </div>
+                    <span className="w-8 text-right text-matrix-accent font-mono">{f.progressPercent}%</span>
+                    <span className="w-10 text-center">
+                      {f.blockers.length > 0 ? (
+                        <span className="inline-flex items-center justify-center w-5 h-5 rounded bg-matrix-danger/20 text-matrix-danger text-xs font-bold cursor-help" title={`BLOCKERS:\n\n${f.blockers.join('\n')}`}>
+                          {f.blockers.length}
+                        </span>
+                      ) : <span className="text-gray-600">-</span>}
+                    </span>
+                    <span className="w-10 text-center">
+                      {f.wipItems.length > 0 ? (
+                        <span className="inline-flex items-center justify-center w-5 h-5 rounded bg-matrix-warning/20 text-matrix-warning text-xs font-bold cursor-help" title={`WORK IN PROGRESS:\n\n${f.wipItems.join('\n')}`}>
+                          {f.wipItems.length}
+                        </span>
+                      ) : <span className="text-gray-600">-</span>}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              {/* Legend */}
+              <div className="mt-2 pt-2 border-t border-matrix-border flex gap-3 text-xs text-matrix-muted">
+                <span><span className="text-matrix-danger">⚠</span> Blocker</span>
+                <span><span className="text-matrix-warning">◉</span> Work in progress</span>
+              </div>
+            </div>
+          )}
 
-      {/* Git info */}
-      {ts?.lastCommit && (
-        <div className="p-4 bg-matrix-surface rounded-lg border border-matrix-border">
-          <h3 className="text-sm font-medium text-gray-300 mb-2">Git</h3>
-          <div className="space-y-1 text-xs text-matrix-muted">
-            {ts.gitBranch && <p>⎇ <span className="text-gray-300">{ts.gitBranch}</span>{ts.gitDirty ? <span className="text-matrix-warning ml-1">(uncommitted changes)</span> : ''}</p>}
-            <p>Last commit: <span className="text-gray-300">{ts.lastCommit.message}</span></p>
-            <p className="text-gray-500">{new Date(ts.lastCommit.date).toLocaleDateString()}</p>
-          </div>
+          {/* Git info */}
+          {ts?.lastCommit && (
+            <div className="p-4 bg-matrix-surface rounded-lg border border-matrix-border">
+              <h3 className="text-sm font-medium text-gray-300 mb-3">Git</h3>
+              <div className="space-y-2 text-xs text-matrix-muted">
+                {ts.gitBranch && (
+                  <div className="flex items-center gap-2">
+                    <span>⎇</span>
+                    <span className="text-gray-300">{ts.gitBranch}</span>
+                    {ts.gitDirty && <span className="text-matrix-warning">(uncommitted)</span>}
+                  </div>
+                )}
+                <div>
+                  <span className="text-gray-500">Last commit:</span>
+                  <span className="text-gray-300 ml-1">{ts.lastCommit.message}</span>
+                </div>
+                <div className="text-gray-500">{new Date(ts.lastCommit.date).toLocaleDateString()}</div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
