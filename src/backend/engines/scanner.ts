@@ -3,9 +3,11 @@ import path from 'node:path';
 import { execSync } from 'node:child_process';
 
 const TARGET_FILES = [
-  'roadmap.md', 'plan.md', 'todo.md', 'guia.md', 'readme.md', 'changelog.md',
-  'ROADMAP.md', 'PLAN.md', 'TODO.md', 'GUIA.md', 'README.md', 'CHANGELOG.md',
+  'roadmap.md', 'plan.md', 'todo.md', 'guia.md', 'guide.md', 'readme.md', 'changelog.md',
+  'ROADMAP.md', 'PLAN.md', 'TODO.md', 'GUIA.md', 'GUIDE.md', 'README.md', 'CHANGELOG.md',
 ];
+
+const GUIDE_FILES = ['guia.md', 'guide.md', 'GUIA.md', 'GUIDE.md'];
 
 const IGNORE_DIRS = new Set([
   'node_modules', '.git', 'dist', 'build', '.next', '.nuxt', 'out',
@@ -83,12 +85,22 @@ export function scanProject(projectPath: string): ScanResult {
   const rawData: FileScanResult[] = [];
 
   for (const filename of TARGET_FILES) {
-    const filePath = path.join(projectPath, filename);
-    if (!fs.existsSync(filePath)) continue;
-
-    // Avoid scanning the same file twice (case-insensitive duplicate)
     const lowerName = filename.toLowerCase();
     if (rawData.some(r => r.file.toLowerCase() === lowerName)) continue;
+
+    const isGuide = GUIDE_FILES.some(g => g.toLowerCase() === lowerName);
+    const isTodo = lowerName === 'todo.md';
+
+    let filePath = path.join(projectPath, filename);
+    if (!fs.existsSync(filePath)) {
+      if (isGuide || isTodo) {
+        const found = findFileRecursive(projectPath, filename);
+        if (!found) continue;
+        filePath = found;
+      } else {
+        continue;
+      }
+    }
 
     const content = fs.readFileSync(filePath, 'utf-8');
     const lines = content.split('\n');
@@ -98,25 +110,40 @@ export function scanProject(projectPath: string): ScanResult {
     const blockers: string[] = [];
     const wipItems: string[] = [];
 
-    for (const line of lines) {
-      const trimmed = line.trim();
-      // Markdown checkboxes: - [x] (done) / - [ ] (pending)
-      if (/^[-*] \[x\]/i.test(trimmed)) {
-        total++;
-        completed++;
-      } else if (/^[-*] \[ \]/.test(trimmed)) {
-        total++;
+    if (isGuide) {
+      total = 1;
+      completed = 1;
+    } else if (isTodo) {
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (/^\d+[\.\)]\s/.test(trimmed) || (/^[-*]\s/.test(trimmed) && !/^\[-|\[-/.test(trimmed))) {
+          total++;
+        }
+        if (/BLOCKER:/i.test(trimmed)) {
+          blockers.push(trimmed.replace(/.*BLOCKER:\s*/i, '').trim());
+        }
+        if (/WIP:/i.test(trimmed)) {
+          wipItems.push(trimmed.replace(/.*WIP:\s*/i, '').trim());
+        }
       }
-      // Headers (## or ###) count as tasks — ✅ = done, no ✅ = pending
-      else if (/^#{2,3} /.test(trimmed)) {
-        total++;
-        if (/✅/.test(trimmed)) completed++;
-      }
-      if (/BLOCKER:/i.test(trimmed)) {
-        blockers.push(trimmed.replace(/.*BLOCKER:\s*/i, '').trim());
-      }
-      if (/WIP:/i.test(trimmed)) {
-        wipItems.push(trimmed.replace(/.*WIP:\s*/i, '').trim());
+    } else {
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (/^[-*] \[x\]/i.test(trimmed)) {
+          total++;
+          completed++;
+        } else if (/^[-*] \[ \]/.test(trimmed)) {
+          total++;
+        } else if (/^#{2,3} /.test(trimmed)) {
+          total++;
+          if (/✅/.test(trimmed)) completed++;
+        }
+        if (/BLOCKER:/i.test(trimmed)) {
+          blockers.push(trimmed.replace(/.*BLOCKER:\s*/i, '').trim());
+        }
+        if (/WIP:/i.test(trimmed)) {
+          wipItems.push(trimmed.replace(/.*WIP:\s*/i, '').trim());
+        }
       }
     }
 
@@ -252,28 +279,49 @@ function hasFilePattern(dir: string, pattern: RegExp, depth = 2): boolean {
   return false;
 }
 
+function findFileRecursive(startDir: string, filename: string): string | null {
+  const entries = fs.readdirSync(startDir, { withFileTypes: true });
+
+  for (const entry of entries) {
+    const fullPath = path.join(startDir, entry.name);
+
+    if (entry.isDirectory()) {
+      if (IGNORE_DIRS.has(entry.name)) continue;
+
+      const result = findFileRecursive(fullPath, filename);
+      if (result) return result;
+    }
+
+    if (entry.isFile() && entry.name === filename) {
+      return fullPath;
+    }
+  }
+
+  return null;
+}
+
 function countDependencies(projectPath: string): number {
   let count = 0;
-  // package.json
-  const pkgPath = path.join(projectPath, 'package.json');
-  if (fs.existsSync(pkgPath)) {
+
+  const pkgPath = findFileRecursive(projectPath, 'package.json');
+  if (pkgPath) {
     try {
       const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
       count += Object.keys(pkg.dependencies || {}).length;
       count += Object.keys(pkg.devDependencies || {}).length;
     } catch { /* skip */ }
   }
-  // requirements.txt
-  const reqPath = path.join(projectPath, 'requirements.txt');
-  if (fs.existsSync(reqPath)) {
+
+  const reqPath = findFileRecursive(projectPath, 'requirements.txt');
+  if (reqPath && fs.existsSync(reqPath)) {
     try {
       const lines = fs.readFileSync(reqPath, 'utf-8').split('\n').filter(l => l.trim() && !l.startsWith('#'));
       count += lines.length;
     } catch { /* skip */ }
   }
   // Cargo.toml
-  const cargoPath = path.join(projectPath, 'Cargo.toml');
-  if (fs.existsSync(cargoPath)) {
+  const cargoPath = findFileRecursive(projectPath, 'Cargo.toml');
+  if (cargoPath && fs.existsSync(cargoPath)) {
     try {
       const content = fs.readFileSync(cargoPath, 'utf-8');
       const depSection = content.match(/\[dependencies\]([\s\S]*?)(\[|$)/);

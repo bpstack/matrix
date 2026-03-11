@@ -1,5 +1,5 @@
-import React from 'react';
-import { useProject, useScanProject, useUpdateProject } from '../../hooks/useProjects';
+import React, { useState } from 'react';
+import { useProject, useScanProject, useUpdateProject, useDeleteProject } from '../../hooks/useProjects';
 import { useUiStore } from '../../stores/ui.store';
 import { t } from '../../lib/i18n';
 
@@ -13,6 +13,13 @@ export function ProjectDetail({ projectId, onBack }: Props) {
   const { data: project, isLoading } = useProject(projectId);
   const scanProject = useScanProject();
   const updateProject = useUpdateProject();
+  const deleteProject = useDeleteProject();
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editPath, setEditPath] = useState('');
+  const [editUrl, setEditUrl] = useState('');
+  const [editDescription, setEditDescription] = useState('');
 
   if (isLoading || !project) return <div className="p-6 text-matrix-muted">{t('loading', language)}</div>;
 
@@ -33,6 +40,41 @@ export function ProjectDetail({ projectId, onBack }: Props) {
     updateProject.mutate({ id: project.id, status: next });
   };
 
+  const startEdit = () => {
+    setEditName(project.name);
+    setEditPath(project.path || '');
+    setEditUrl(project.url || '');
+    setEditDescription(project.description || '');
+    setIsEditing(true);
+  };
+
+  const saveEdit = () => {
+    updateProject.mutate({
+      id: project.id,
+      name: editName.trim() || undefined,
+      path: editPath.trim() || undefined,
+      url: editUrl.trim() || undefined,
+      description: editDescription.trim() || undefined,
+    }, {
+      onSuccess: () => setIsEditing(false),
+    });
+  };
+
+  const handleDelete = () => {
+    if (confirm(t('deleteProjectConfirm', language) || 'Delete this project?')) {
+      deleteProject.mutate(project.id, { onSuccess: onBack });
+    }
+  };
+
+  const handleSelectDirectory = async () => {
+    const dir = await window.matrix.selectDirectory();
+    if (dir) setEditPath(dir);
+  };
+
+  const openFolder = () => {
+    if (project.path) window.matrix.openDirectory(project.path);
+  };
+
   return (
     <div className="p-6">
       {/* Header */}
@@ -41,34 +83,94 @@ export function ProjectDetail({ projectId, onBack }: Props) {
       </button>
 
       <div className="flex items-start justify-between mb-6">
-        <div>
-          <div className="flex items-center gap-3 mb-1">
-            <h1 className="text-xl font-semibold text-gray-200">{project.name}</h1>
-            <button onClick={cycleStatus} className={`px-2 py-0.5 text-xs rounded-full ${statusColors[project.status] || ''}`}>
-              {project.status}
-            </button>
+        {isEditing ? (
+          <div className="flex-1 space-y-3 mr-4">
+            <input
+              value={editName}
+              onChange={e => setEditName(e.target.value)}
+              placeholder={t('projectName', language)}
+              className="w-full px-3 py-2 bg-matrix-bg border border-matrix-border rounded text-lg font-semibold text-gray-200 placeholder-matrix-muted focus:border-matrix-accent focus:outline-none"
+            />
+            <div className="flex gap-2">
+              <input
+                value={editPath}
+                onChange={e => setEditPath(e.target.value)}
+                placeholder={t('projectPath', language)}
+                className="flex-1 px-3 py-2 bg-matrix-bg border border-matrix-border rounded text-sm text-gray-200 placeholder-matrix-muted focus:border-matrix-accent focus:outline-none"
+              />
+              <button
+                onClick={handleSelectDirectory}
+                className="px-3 py-2 text-sm bg-matrix-bg border border-matrix-border rounded text-gray-300 hover:bg-matrix-surface transition-colors"
+              >
+                📁
+              </button>
+            </div>
+            <input
+              value={editUrl}
+              onChange={e => setEditUrl(e.target.value)}
+              placeholder="URL (GitHub, GitLab...)"
+              className="w-full px-3 py-2 bg-matrix-bg border border-matrix-border rounded text-sm text-gray-200 placeholder-matrix-muted focus:border-matrix-accent focus:outline-none"
+            />
+            <textarea
+              value={editDescription}
+              onChange={e => setEditDescription(e.target.value)}
+              placeholder={t('taskDescription', language)}
+              rows={2}
+              className="w-full px-3 py-2 bg-matrix-bg border border-matrix-border rounded text-sm text-gray-200 placeholder-matrix-muted focus:border-matrix-accent focus:outline-none resize-none"
+            />
+            <div className="flex gap-2">
+              <button onClick={saveEdit} className="px-3 py-1.5 text-sm bg-matrix-accent text-black rounded hover:bg-matrix-accent-hover transition-colors font-medium">
+                {t('save', language)}
+              </button>
+              <button onClick={() => setIsEditing(false)} className="px-3 py-1.5 text-sm text-matrix-muted hover:text-gray-300 transition-colors">
+                {t('cancel', language)}
+              </button>
+            </div>
           </div>
-          {project.description && <p className="text-sm text-matrix-muted">{project.description}</p>}
-          {project.url && (
-            <a href={project.url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-400 hover:underline mt-1 inline-block">
-              {project.url}
-            </a>
+        ) : (
+          <div>
+            <div className="flex items-center gap-3 mb-1">
+              <h1 className="text-xl font-semibold text-gray-200">{project.name}</h1>
+              <button onClick={cycleStatus} className={`px-2 py-0.5 text-xs rounded-full ${statusColors[project.status] || ''}`}>
+                {project.status}
+              </button>
+            </div>
+            {project.description && <p className="text-sm text-matrix-muted">{project.description}</p>}
+            {project.url && (
+              <a href={project.url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-400 hover:underline mt-1 inline-block">
+                {project.url}
+              </a>
+            )}
+          </div>
+        )}
+        <div className="flex gap-2 shrink-0">
+          {!isEditing && (
+            <>
+              <button onClick={startEdit} className="px-3 py-1.5 text-sm bg-matrix-surface border border-matrix-border text-gray-300 rounded hover:bg-matrix-bg transition-colors">
+                ✎ {t('edit', language)}
+              </button>
+              <button onClick={handleDelete} className="px-3 py-1.5 text-sm text-matrix-danger hover:bg-matrix-danger/10 rounded transition-colors">
+                ✕
+              </button>
+            </>
+          )}
+          {project.path && !isEditing && (
+            <button
+              onClick={() => scanProject.mutate(project.id)}
+              className="px-3 py-1.5 text-sm bg-matrix-accent/20 text-matrix-accent rounded hover:bg-matrix-accent/30 transition-colors"
+            >
+              ⟳ Scan
+            </button>
           )}
         </div>
-        {project.path && (
-          <button
-            onClick={() => scanProject.mutate(project.id)}
-            className="px-3 py-1.5 text-sm bg-matrix-accent/20 text-matrix-accent rounded hover:bg-matrix-accent/30 transition-colors"
-          >
-            ⟳ Scan
-          </button>
-        )}
       </div>
 
       {/* Info cards grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
         {project.path && (
-          <InfoCard label={t('directory', language)} value={project.path} small />
+          <div onClick={openFolder} className="cursor-pointer hover:border-matrix-accent/50 transition-colors">
+            <InfoCard label={t('directory', language)} value={project.path} small />
+          </div>
         )}
         {ts && (
           <>

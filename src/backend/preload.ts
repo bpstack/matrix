@@ -6,4 +6,6 @@ contextBridge.exposeInMainWorld('matrix', {
   onThemeChange: (callback: (theme: string) => void) => {
     ipcRenderer.on('set-theme', (_event, theme: string) => callback(theme));
   },
+  selectDirectory: () => ipcRenderer.invoke('select-directory'),
+  openDirectory: (path: string) => ipcRenderer.invoke('open-directory', path),
 });

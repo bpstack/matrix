@@ -1,4 +1,4 @@
-import { app, BrowserWindow, session, Menu, ipcMain } from 'electron';
+import { app, BrowserWindow, session, Menu, ipcMain, dialog } from 'electron';
 import path from 'node:path';
 import fs from 'node:fs';
 import started from 'electron-squirrel-startup';
@@ -140,6 +140,21 @@ app.on('ready', () => {
   initDb();
   runMigrations();
   buildMenu();
+
+  ipcMain.handle('select-directory', async () => {
+    const result = await dialog.showOpenDialog(mainWindow!, {
+      properties: ['openDirectory'],
+      title: 'Select Project Folder',
+    });
+    return result.canceled ? null : result.filePaths[0];
+  });
+
+  ipcMain.handle('open-directory', async (_event, dirPath: string) => {
+    if (fs.existsSync(dirPath)) {
+      const { shell } = require('electron');
+      shell.openPath(dirPath);
+    }
+  });
 
   server = expressApp.listen(API_PORT, () => {
     console.log(`[Matrix] API running on http://localhost:${API_PORT}`);

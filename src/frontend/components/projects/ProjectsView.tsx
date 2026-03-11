@@ -24,6 +24,11 @@ export function ProjectsView() {
     return <ProjectDetail projectId={selectedId} onBack={() => setSelectedId(null)} />;
   }
 
+  const handleSelectDirectory = async () => {
+    const dir = await window.matrix.selectDirectory();
+    if (dir) setPath(dir);
+  };
+
   const handleCreate = () => {
     if (!name.trim()) return;
     createProject.mutate(
@@ -48,8 +53,13 @@ export function ProjectsView() {
         <div className="mb-6 p-4 bg-matrix-surface rounded-lg border border-matrix-border space-y-3">
           <input value={name} onChange={e => setName(e.target.value)} placeholder={t('projectName', language)}
             className="w-full px-3 py-2 bg-matrix-bg border border-matrix-border rounded text-sm text-gray-200 placeholder-matrix-muted focus:border-matrix-accent focus:outline-none" />
-          <input value={path} onChange={e => setPath(e.target.value)} placeholder={t('projectPath', language)}
-            className="w-full px-3 py-2 bg-matrix-bg border border-matrix-border rounded text-sm text-gray-200 placeholder-matrix-muted focus:border-matrix-accent focus:outline-none" />
+          <div className="flex gap-2">
+            <input value={path} onChange={e => setPath(e.target.value)} placeholder={t('projectPath', language)}
+              className="flex-1 px-3 py-2 bg-matrix-bg border border-matrix-border rounded text-sm text-gray-200 placeholder-matrix-muted focus:border-matrix-accent focus:outline-none" />
+            <button onClick={handleSelectDirectory} type="button" className="px-3 py-2 bg-matrix-bg border border-matrix-border rounded text-gray-300 hover:bg-matrix-surface transition-colors">
+              📁
+            </button>
+          </div>
           <input value={url} onChange={e => setUrl(e.target.value)} placeholder="URL (GitHub, GitLab...)"
             className="w-full px-3 py-2 bg-matrix-bg border border-matrix-border rounded text-sm text-gray-200 placeholder-matrix-muted focus:border-matrix-accent focus:outline-none" />
           <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder={t('taskDescription', language)} rows={2}
