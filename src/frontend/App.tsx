@@ -6,8 +6,32 @@ import { apiFetch } from './lib/api';
 
 const queryClient = new QueryClient({
   defaultOptions: {
-    queries: { retry: 1, staleTime: 5000 },
+    queries: {
+      retry: (failureCount, error) => {
+        // Don't retry 401s — vault is locked, retrying won't help
+        if (error instanceof Error && error.message === 'Vault is locked') return false;
+        return failureCount < 1;
+      },
+      staleTime: 5000,
+      refetchOnMount: 'always',
+    },
+    mutations: {
+      onError: (error) => {
+        // Auto-redirect to lock screen when vault locks by inactivity
+        if (error instanceof Error && error.message === 'Vault is locked') {
+          queryClient.invalidateQueries({ queryKey: ['passwords', 'status'] });
+        }
+      },
+    },
   },
+});
+
+// Also handle 401 on queries (auto-lock detection)
+queryClient.getQueryCache().subscribe((event) => {
+  if (event.type === 'updated' && event.query.state.error instanceof Error &&
+      event.query.state.error.message === 'Vault is locked') {
+    queryClient.invalidateQueries({ queryKey: ['passwords', 'status'] });
+  }
 });
 
 function ThemeProvider({ children }: { children: React.ReactNode }) {
