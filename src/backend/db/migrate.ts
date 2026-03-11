@@ -147,4 +147,20 @@ export function runMigrations() {
     value TEXT NOT NULL,
     updated_at TEXT NOT NULL
   )`);
+
+  db.run(sql`CREATE TABLE IF NOT EXISTS passwords (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    label TEXT NOT NULL,
+    domain TEXT,
+    username TEXT,
+    encrypted_password TEXT NOT NULL,
+    category TEXT NOT NULL DEFAULT 'other',
+    favorite INTEGER NOT NULL DEFAULT 0,
+    notes TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  )`);
+
+  db.run(sql`CREATE INDEX IF NOT EXISTS idx_passwords_domain_username ON passwords (domain, username)`);
+  db.run(sql`CREATE INDEX IF NOT EXISTS idx_passwords_category ON passwords (category)`);
 }

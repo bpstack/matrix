@@ -131,3 +131,16 @@ export const settings = sqliteTable('settings', {
   value: text('value').notNull(),
   updatedAt: text('updated_at').notNull(),
 });
+
+export const passwords = sqliteTable('passwords', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  label: text('label').notNull(),
+  domain: text('domain'),
+  username: text('username'),
+  encryptedPassword: text('encrypted_password').notNull(),
+  category: text('category').notNull().default('other'),
+  favorite: integer('favorite').notNull().default(0),
+  notes: text('notes'),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+});
