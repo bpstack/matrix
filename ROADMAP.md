@@ -486,32 +486,38 @@ Stats: ✅
 
 ---
 
-## Phase 5: Passwords + Security
+## Phase 5: Passwords + Security ✅ DONE
 
-Módulo de passwords 100% local. Protegido con master password, cifrado AES-256-GCM individual por entry, CRUD completo, import TXT/CSV con preview editable, y búsqueda instantánea. Zero dependencias externas de crypto.
+Módulo de passwords 100% local. Protegido con master password, cifrado AES-256-GCM individual por entry, CRUD completo, import TXT/CSV con preview editable, búsqueda instantánea y bulk operations. Zero dependencias externas de crypto.
 
 ### Diseño de seguridad
 
 **Flujo criptográfico:**
 ```
 Master Password (input del usuario)
-  ├─ PBKDF2(password, salt_auth, 600k iterations, sha512) → auth_hash  [verificar login]
-  └─ PBKDF2(password, salt_enc,  600k iterations, sha512) → enc_key    [cifrar/descifrar]
+  ├─ PBKDF2("auth:" + password, salt_auth, 600k iterations, sha512) → auth_hash  [verificar login]
+  └─ PBKDF2("enc:"  + password, salt_enc,  600k iterations, sha512) → enc_key    [cifrar/descifrar]
 
 Cada entry en DB:
-  plaintext → AES-256-GCM(enc_key, random_iv) → "base64(iv):base64(authTag):base64(ciphertext)"
+  plaintext → AES-256-GCM(enc_key, random_iv) → "v1:base64(iv):base64(authTag):base64(ciphertext)"
 ```
 
 **Principios:**
 - `auth_hash` + `salt_auth` + `salt_enc` → guardados en tabla `settings` (keys: `passwords_auth_hash`, `passwords_salt_auth`, `passwords_salt_enc`)
 - La master password **nunca se almacena** — solo su hash PBKDF2
+- **Separación de dominio**: prefijos `auth:` y `enc:` en PBKDF2 evitan que auth_hash y enc_key puedan coincidir (retrocompatible con vaults legacy sin prefijo)
+- **Prefijo `v1:`** en datos encriptados permite detección fiable vs plaintext legacy (sin heurísticas frágiles)
 - La `enc_key` vive **solo en memoria** del proceso Node.js — nunca en disco, nunca en renderer
 - Al hacer lock, el Buffer de `enc_key` se limpia con `.fill(0)` antes de setear a `null` (evita residuos en heap)
 - `label`, `domain`, `username` → en claro (necesario para búsqueda SQL LIKE)
 - `password` y `notes` → cifrados con AES-256-GCM + IV aleatorio por entry
 - `getAll` **NO** descifra passwords — solo devuelve metadatos. El descifrado es bajo demanda vía `getById`
 - Auto-lock al cambiar de tab Y por inactividad (5 min configurable): la `enc_key` se destruye de memoria
-- Clipboard se limpia automáticamente a los 30 segundos tras copiar
+- Clipboard se limpia automáticamente a los 30 segundos tras copiar (con try/catch en timer)
+- **Rate limiting**: 5 intentos fallidos → lockout 60s en unlock/setup/changeMaster
+- **Re-key atómico**: `changeMasterPassword` usa transacción SQLite — si falla, rollback completo sin corrupción
+- **Validación de IDs**: `parseInt` + `Number.isInteger` + `> 0` en todos los endpoints con `:id`
+- **Import size limit**: máximo 10 MB por archivo
 
 **Advertencia para mostrar en UI:**
 > "Esta vault es local y no reemplaza a un password manager dedicado (Bitwarden, 1Password). Si alguien accede al archivo `.db`, puede ver dominios y usernames — las contraseñas sí están cifradas."
@@ -537,7 +543,7 @@ CREATE TABLE IF NOT EXISTS passwords (
 
 ---
 
-### 5.1 Schema + Migration
+### 5.1 Schema + Migration ✅
 
 **Archivos a modificar:**
 - `src/backend/db/schema.ts` — añadir tabla `passwords` con Drizzle (mismo patrón que `activity_log`)
@@ -561,7 +567,7 @@ export const passwords = sqliteTable('passwords', {
 
 ---
 
-### 5.2 Crypto Engine *(nuevo — paralelo con 5.1)*
+### 5.2 Crypto Engine *(nuevo — paralelo con 5.1)* ✅
 
 **Archivo nuevo:** `src/backend/engines/crypto.ts`
 
@@ -618,7 +624,7 @@ export function decrypt(encrypted: string, key: Buffer): string {
 
 ---
 
-### 5.3 Repository *(nuevo — depends on 5.1)*
+### 5.3 Repository *(nuevo — depends on 5.1)* ✅
 
 **Archivo nuevo:** `src/backend/repositories/passwords.repository.ts`
 
@@ -643,7 +649,7 @@ Para `bulkCreate`, usar `getDb().transaction(...)` de better-sqlite3 para atomic
 
 ---
 
-### 5.4 Import TXT/CSV Parser *(nuevo — paralelo con 5.3)*
+### 5.4 Import TXT/CSV Parser *(nuevo — paralelo con 5.3)* ✅
 
 **Archivo nuevo:** `src/backend/engines/import-parser.ts`
 
@@ -695,7 +701,7 @@ const isUrl    = (s: string) => s.startsWith('http://') || s.startsWith('https:/
 
 ---
 
-### 5.5 Controller *(nuevo — depends on 5.2, 5.3, 5.4)*
+### 5.5 Controller *(nuevo — depends on 5.2, 5.3, 5.4)* ✅
 
 **Archivo nuevo:** `src/backend/controllers/passwords.controller.ts`
 
@@ -768,7 +774,7 @@ const changeMasterSchema   = z.object({ currentPassword: z.string().min(1), newP
 
 ---
 
-### 5.6 Routes *(nuevo — depends on 5.5)*
+### 5.6 Routes *(nuevo — depends on 5.5)* ✅
 
 **Archivo nuevo:** `src/backend/routes/passwords.routes.ts`
 
@@ -810,7 +816,7 @@ app.use('/api', passwordsRouter);
 
 ---
 
-### 5.7 IPC para File Picker *(modifica archivos existentes)*
+### 5.7 IPC para File Picker *(modifica archivos existentes)* ✅
 
 **En `src/backend/index.ts`** — añadir junto a los IPC handlers existentes:
 ```typescript
@@ -850,7 +856,7 @@ declare global {
 
 ---
 
-### 5.8 Hook *(nuevo — depends on 5.6)*
+### 5.8 Hook *(nuevo — depends on 5.6)* ✅
 
 **Archivo nuevo:** `src/frontend/hooks/usePasswords.ts`
 
@@ -902,7 +908,7 @@ export function usePasswords(search?: string, category?: string, enabled = false
 
 ---
 
-### 5.9 PasswordsView — 3 estados *(nuevo — depends on 5.8)*
+### 5.9 PasswordsView — 3 estados *(nuevo — depends on 5.8)* ✅
 
 **Archivo nuevo:** `src/frontend/components/passwords/PasswordsView.tsx`
 
@@ -947,7 +953,7 @@ Footer: "234 contraseñas" — ordenadas por favorite DESC, label ASC
 
 ---
 
-### 5.10 Import Flow UI *(integrado en VaultView)*
+### 5.10 Import Flow UI *(integrado en VaultView)* ✅
 
 **Modal en 4 pasos** activado por botón "↑ Importar":
 
@@ -983,7 +989,7 @@ A importar: 221 · Descartadas: 13 · Duplicados detectados: 4 (se saltarán)
 
 ---
 
-### 5.11 Sidebar + AppShell + Auto-lock
+### 5.11 Sidebar + AppShell + Auto-lock ✅
 
 **`src/frontend/stores/ui.store.ts`:**
 ```typescript
@@ -1018,7 +1024,7 @@ El timer de inactividad vive en el controller (§5.5). Cada endpoint protegido l
 
 ---
 
-### 5.12 i18n *(src/frontend/lib/i18n.ts)*
+### 5.12 i18n *(src/frontend/lib/i18n.ts)* ✅
 
 ```typescript
 passwords:          { en: 'Passwords',              es: 'Contraseñas' },
