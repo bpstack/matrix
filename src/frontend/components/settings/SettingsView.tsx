@@ -224,8 +224,8 @@ export function SettingsView() {
         )}
 
         {/* Danger Zone */}
-        <div className="border border-red-900/30 rounded-md p-3 bg-red-950/10">
-          <p className="text-xs text-red-400/70 mb-2">Danger Zone</p>
+        <div className="border border-red-500/20 rounded-md p-3 bg-matrix-surface">
+          <p className="text-xs text-red-400 mb-2">Danger Zone</p>
           <button
             onClick={async () => {
               if (
@@ -247,7 +247,7 @@ export function SettingsView() {
                 }
               }
             }}
-            className="px-3 py-1.5 rounded text-sm bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-colors"
+            className="px-3 py-1.5 rounded text-sm bg-red-500/10 text-red-400 border border-red-500/30 hover:bg-red-500/20 transition-colors"
           >
             {language === 'es' ? 'Borrar base de datos' : 'Reset Database'}
           </button>
