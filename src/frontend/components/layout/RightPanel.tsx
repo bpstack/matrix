@@ -110,12 +110,6 @@ const MOCK_SHORTCUTS = [
   { keys: 'Esc', action: 'Close modal' },
 ];
 
-const QUOTES = [
-  { text: 'Strategy without tactics is the slowest route to victory.', author: 'Sun Tzu' },
-  { text: 'The secret of getting ahead is getting started.', author: 'Mark Twain' },
-  { text: 'Plans are nothing; planning is everything.', author: 'Eisenhower' },
-];
-
 /* ── Priority / status helpers ── */
 const priorityColor: Record<string, string> = {
   low: 'text-gray-500', medium: 'text-blue-400', high: 'text-orange-400', urgent: 'text-red-400',

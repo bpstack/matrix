@@ -1,10 +1,4 @@
 import { Request, Response } from 'express';
-import { z } from 'zod';
-
-const quoteSchema = z.object({
-  quote: z.string(),
-  author: z.string(),
-});
 
 const FALLBACK_QUOTES = [
   { quote: 'The only way to do great work is to love what you do.', author: 'Steve Jobs' },
@@ -80,6 +74,7 @@ export const externalController = {
             title: s.value.title,
             url: s.value.url || `https://news.ycombinator.com/item?id=${s.value.id}`,
             domain: s.value.url ? new URL(s.value.url).hostname.replace('www.', '') : 'news.ycombinator.com',
+            time: s.value.time,
             score: s.value.score,
           }));
       }

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { apiFetch } from '../lib/api';
 
 export interface HnStory {
   id: number;
@@ -75,44 +76,50 @@ export function useDevFeed() {
           isLoading: false,
           error: null,
         });
+        return; // Skip network fetch if cache is fresh
       }
 
       // Fetch from backend (which calls external APIs)
       try {
-        const response = await fetch('/api/external/dev-feed');
-        if (response.ok) {
-          const result = await response.json();
-          
-          setData({
-            hnStories: result.hnStories || [],
-            trendingRepos: result.trendingRepos || [],
-            lastUpdated: new Date(),
-            isLoading: false,
-            error: null,
-          });
+        const result = await apiFetch<{ hnStories: HnStory[]; trendingRepos: GitHubRepo[] }>('/external/dev-feed');
+        
+        setData({
+          hnStories: result.hnStories || [],
+          trendingRepos: result.trendingRepos || [],
+          lastUpdated: new Date(),
+          isLoading: false,
+          error: null,
+        });
 
-          // Update cache
-          if (result.hnStories?.length > 0 || result.trendingRepos?.length > 0) {
-            setCached({ hnStories: result.hnStories, trendingRepos: result.trendingRepos });
-          }
-          return;
+        // Update cache
+        if (result.hnStories?.length > 0 || result.trendingRepos?.length > 0) {
+          setCached({ hnStories: result.hnStories, trendingRepos: result.trendingRepos });
         }
+        return;
       } catch {
         // Fall through to cache or error state
       }
 
-      // If fetch failed but we have cached data, use it
-      if (cached.data) {
-        setData({
-          hnStories: cached.data.hnStories,
-          trendingRepos: cached.data.trendingRepos,
-          lastUpdated: new Date(cached.data.fetchedAt),
-          isLoading: false,
-          error: null,
-        });
-      } else {
-        setData(prev => ({ ...prev, isLoading: false, error: 'Unable to load feed' }));
+      // If fetch failed but we have any cached data (even stale), use it
+      // Read directly from localStorage to bypass TTL check
+      try {
+        const staleCache = localStorage.getItem(CACHE_KEY);
+        if (staleCache) {
+          const parsed = JSON.parse(staleCache);
+          setData({
+            hnStories: parsed.hnStories || [],
+            trendingRepos: parsed.trendingRepos || [],
+            lastUpdated: new Date(parsed.fetchedAt),
+            isLoading: false,
+            error: null,
+          });
+          return;
+        }
+      } catch {
+        // Ignore
       }
+
+      setData(prev => ({ ...prev, isLoading: false, error: 'Unable to load feed' }));
     };
 
     fetchData();
