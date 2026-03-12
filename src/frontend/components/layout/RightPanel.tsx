@@ -1,5 +1,7 @@
 import React from 'react';
 import { Tab } from '../../stores/ui.store';
+import { useDailyQuote } from '../../hooks/useDailyQuote';
+import { useDevFeed } from '../../hooks/useDevFeed';
 
 /* ── Shared card wrapper ── */
 function PanelCard({ title, icon, children }: { title: string; icon: string; children: React.ReactNode }) {
@@ -183,13 +185,44 @@ function DailyFocus() {
 }
 
 function MotivationalQuote() {
-  const q = QUOTES[Math.floor(Date.now() / 86400000) % QUOTES.length]; // rotates daily
+  const { quote, isLoading, refresh } = useDailyQuote();
+  
+  if (isLoading) {
+    return (
+      <PanelCard title="Daily Thought" icon="✧">
+        <div className="animate-pulse space-y-2">
+          <div className="h-3 bg-matrix-border/50 rounded w-full" />
+          <div className="h-3 bg-matrix-border/50 rounded w-4/5" />
+          <div className="h-3 bg-matrix-border/50 rounded w-3/5" />
+        </div>
+        <div className="h-2 w-20 bg-matrix-border/50 rounded mt-3 ml-auto" />
+      </PanelCard>
+    );
+  }
+
+  if (!quote) {
+    return (
+      <PanelCard title="Daily Thought" icon="✧">
+        <p className="text-xs text-matrix-muted">Unable to load quote</p>
+      </PanelCard>
+    );
+  }
+
   return (
     <PanelCard title="Daily Thought" icon="✧">
-      <blockquote className="text-xs text-gray-400 italic leading-relaxed">
-        "{q.text}"
-      </blockquote>
-      <p className="text-[10px] text-matrix-muted mt-1.5 text-right">— {q.author}</p>
+      <div className="flex items-start justify-between gap-2">
+        <blockquote className="text-xs text-gray-400 italic leading-relaxed flex-1">
+          "{quote.quote}"
+        </blockquote>
+        <button
+          onClick={refresh}
+          className="text-matrix-muted hover:text-matrix-accent text-xs opacity-40 hover:opacity-100 transition-opacity"
+          title="New quote"
+        >
+          ↻
+        </button>
+      </div>
+      <p className="text-[10px] text-matrix-muted mt-1.5 text-right">— {quote.author}</p>
     </PanelCard>
   );
 }
@@ -380,6 +413,75 @@ function WeeklyTrends() {
   );
 }
 
+function DevFeed() {
+  const { hnStories, trendingRepos, isLoading, error } = useDevFeed();
+
+  if (isLoading) {
+    return (
+      <PanelCard title="Dev Feed" icon="⚡">
+        <div className="animate-pulse space-y-3">
+          <div className="space-y-1.5">
+            <div className="h-2 bg-matrix-border/50 rounded w-4/5" />
+            <div className="h-2 bg-matrix-border/50 rounded w-3/5" />
+          </div>
+          <div className="pt-2 border-t border-matrix-border/30 space-y-1.5">
+            <div className="h-2 bg-matrix-border/50 rounded w-3/5" />
+            <div className="h-2 bg-matrix-border/50 rounded w-4/5" />
+          </div>
+        </div>
+      </PanelCard>
+    );
+  }
+
+  if (error && hnStories.length === 0 && trendingRepos.length === 0) {
+    return (
+      <PanelCard title="Dev Feed" icon="⚡">
+        <p className="text-xs text-matrix-muted">Unable to load feed</p>
+      </PanelCard>
+    );
+  }
+
+  return (
+    <PanelCard title="Dev Feed" icon="⚡">
+      <div className="space-y-3">
+        {hnStories.length > 0 && (
+          <div>
+            <p className="text-[10px] text-matrix-muted mb-1.5">Hacker News</p>
+            <div className="space-y-1.5">
+              {hnStories.slice(0, 5).map((story) => (
+                <button
+                  key={story.id}
+                  onClick={() => window.matrix?.openExternal(story.url)}
+                  className="block text-xs text-gray-400 hover:text-matrix-accent transition-colors text-left w-full"
+                >
+                  - {story.title}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+        {trendingRepos.length > 0 && (
+          <div className="pt-2 border-t border-matrix-border/30">
+            <p className="text-[10px] text-matrix-muted mb-1.5">GitHub Trending</p>
+            <div className="space-y-1.5">
+              {trendingRepos.slice(0, 5).map((repo) => (
+                <button
+                  key={repo.id}
+                  onClick={() => window.matrix?.openExternal(repo.html_url)}
+                  className="block text-xs text-gray-400 hover:text-matrix-accent transition-colors text-left w-full"
+                >
+                  - <span className="text-matrix-accent">★</span> {repo.name}
+                  {repo.language && <span className="text-matrix-muted text-[10px] ml-1">{repo.language}</span>}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </PanelCard>
+  );
+}
+
 function ShortcutsHelp() {
   return (
     <PanelCard title="Keyboard Shortcuts" icon="⌨">
@@ -420,11 +522,11 @@ function SystemStatus() {
 /* ── Panel configurations per tab ── */
 
 const PANEL_CONFIG: Record<Tab, React.FC[]> = {
-  overview: [DailyFocus, UpcomingDeadlines, ProductivityStreak, MotivationalQuote],
+  overview: [DailyFocus, UpcomingDeadlines, ProductivityStreak, MotivationalQuote, DevFeed],
   tasks: [ProductivityStreak, TaskBurndown, UpcomingDeadlines],
   projects: [TechRadar, DependenciesHealth, SystemStatus],
   ideas: [IdeaFunnel, TopScoredIdeas, MotivationalQuote],
-  passwords: [ShortcutsHelp, SystemStatus, MotivationalQuote],
+  passwords: [ShortcutsHelp, SystemStatus, MotivationalQuote, DevFeed],
   settings: [ShortcutsHelp, SystemStatus, MotivationalQuote],
 };
 
