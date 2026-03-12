@@ -123,16 +123,6 @@ export function runMigrations() {
   // Fix old scores stored in 0-1 range → multiply to 1-10 range
   db.run(sql.raw(`UPDATE idea_evaluations SET total_score = total_score * 10 WHERE total_score <= 1`));
 
-  db.run(sql`CREATE TABLE IF NOT EXISTS subscriptions (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    cycle TEXT NOT NULL DEFAULT 'monthly',
-    reset_day INTEGER NOT NULL DEFAULT 1,
-    budget INTEGER NOT NULL DEFAULT 100,
-    current_used INTEGER NOT NULL DEFAULT 0,
-    updated_at TEXT NOT NULL
-  )`);
-
   db.run(sql`CREATE TABLE IF NOT EXISTS activity_log (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     action TEXT NOT NULL,

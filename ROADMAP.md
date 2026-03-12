@@ -1,4 +1,4 @@
-﻿# Matrix — Roadmap
+# Matrix — Roadmap
 
 > Proyecto simplificado extraído de matrix-v2. Migración modular: una feature a la vez,
 > simplificando donde matrix-v2 era innecesariamente complejo.
@@ -245,15 +245,14 @@ Projects:
 
 ---
 
-## Phase 3: Ideas Pipeline + AI Budget ✅
+## Phase 3: Ideas Pipeline ✅
 
-Sistema de captura, evaluación y promoción de ideas con Kanban visual. Incluye tracking de presupuesto AI (adelantado de Phase 6).
+Sistema de captura, evaluación y promoción de ideas con Kanban visual.
 
 ### 3.1 Schema & Migration Updates ✅
 - ✅ `ideas`: añadidos `target_type` TEXT (mission|objective|plan|task|null), `target_id` INTEGER (nullable), `project_id` INTEGER (nullable, FK → projects)
 - ✅ Nueva tabla `idea_evaluations`: id, idea_id (FK unique 1:1), alignment_score (1-10), impact_score (1-10), cost_score (1-10), risk_score (1-10), total_score REAL, reasoning TEXT, decision (pending|approved|rejected), decided_at, created_at
-- ✅ Nueva tabla `subscriptions` (AI Budget): id, name, cycle (weekly|monthly), reset_day INTEGER, budget INTEGER (default 100, %), current_used INTEGER (default 0, %), updated_at
-- ✅ Migración: ALTER TABLE ideas + CREATE TABLE idea_evaluations + CREATE TABLE subscriptions
+- ✅ Migración: ALTER TABLE ideas + CREATE TABLE idea_evaluations
 - ✅ Migración correctiva: scores antiguos en rango 0-1 multiplicados x10 a rango 1-10
 
 ### 3.2 Ideas CRUD + Evaluations + Promotion ✅
@@ -275,14 +274,7 @@ totalScore = alignment × 0.4 + impact × 0.3 + (10 - cost) × 0.15 + (10 - risk
 - ✅ Los 4 scores son sliders manuales (sin auto-cálculo NLP)
 - ✅ Ideas se vinculan opcionalmente al schema estratégico (target_type + target_id) Y a un proyecto (project_id)
 
-### 3.3 Subscriptions CRUD (AI Budget) ✅
-- ✅ CRUD + PATCH `/api/subscriptions/:id/usage` (actualizar current_used)
-- ✅ Tracking de suscripciones AI: nombre, ciclo, % presupuesto usado
-- ✅ Repository: `subscriptions.repository.ts` — findAll, findById, create, update, delete
-- ✅ Controller: `subscriptions.controller.ts` — validación Zod, usage endpoint
-- ✅ Routes: `subscriptions.routes.ts` — 5 endpoints
-
-### 3.4 UI: Kanban de Ideas ✅
+### 3.3 UI: Kanban de Ideas ✅
 4 columnas: **Pending → Evaluating → Approved → Rejected**
 
 - ✅ **Card de idea**: título, descripción truncada, badges (target, proyecto, promoted_to), fecha
@@ -296,27 +288,13 @@ totalScore = alignment × 0.4 + impact × 0.3 + (10 - cost) × 0.15 + (10 - risk
 - ✅ **Modal de promoción**: seleccionar destino (Task/Plan/Objective/Project), seleccionar padre, confirmar
 - ✅ Hook: `useIdeas.ts` — 9 hooks (queries + mutations con invalidación en cascada)
 
-### 3.5 UI: AI Budget en Settings ✅
-- ✅ Sección "AI Budget" dentro de SettingsView
-- ✅ Lista de suscripciones como cards compactas: nombre, ciclo, barra de progreso (% usado), input editable
-- ✅ Colores: verde (<50%), amarillo (50-80%), rojo (>80%)
-- ✅ Botón "+" para agregar suscripción con formulario inline (nombre, ciclo, reset day, budget)
-- ✅ Botón reset por suscripción + botón eliminar
-- ✅ Hook: `useSubscriptions.ts` — 5 hooks
-
-### 3.6 Banner de AI Budget en Ideas ✅
-- ✅ Banner sutil arriba del Kanban
-- ✅ Muestra suscripciones >70%: "! Claude Code: 82% usado"
-- ✅ Doble alerta (!!) para suscripciones >90%
-- ✅ Solo aparece si hay suscripciones configuradas y alguna está alta
-
-### 3.7 Centro de Ayuda ✅
+### 3.4 Centro de Ayuda ✅
 - ✅ Botón `?` junto al título "Ideas" para abrir/cerrar panel de ayuda
 - ✅ Panel completo debajo del Kanban (sin scroll interno, contenido completo visible)
 - ✅ Secciones: flujo de trabajo, descripción de las 4 etapas, sistema de evaluación con fórmula, promoción, leyenda de iconos
 - ✅ Bilingüe (EN/ES)
 
-### 3.8 API Endpoints ✅
+### 3.5 API Endpoints ✅
 ```
 Ideas: ✅
   GET    /api/ideas                    → listar (filtrable por ?status=)
@@ -328,21 +306,14 @@ Ideas: ✅
   GET    /api/ideas/:id/evaluation     → obtener evaluación
   PATCH  /api/ideas/:id/decide         → aprobar/rechazar
   POST   /api/ideas/:id/promote        → promover a entidad
-
-Subscriptions: ✅
-  GET    /api/subscriptions            → listar todas
-  POST   /api/subscriptions            → crear
-  PATCH  /api/subscriptions/:id        → actualizar
-  DELETE /api/subscriptions/:id        → borrar
-  PATCH  /api/subscriptions/:id/usage  → actualizar % usado
 ```
 
-### 3.9 Arquitectura por entidad ✅
+### 3.6 Arquitectura por entidad ✅
 Siguiendo el patrón establecido en Phase 1:
-- ✅ `routes/ideas.routes.ts` + `routes/subscriptions.routes.ts`
-- ✅ `controllers/ideas.controller.ts` + `controllers/subscriptions.controller.ts`
-- ✅ `repositories/ideas.repository.ts` + `repositories/subscriptions.repository.ts`
-- ✅ `hooks/useIdeas.ts` + `hooks/useSubscriptions.ts`
+- ✅ `routes/ideas.routes.ts`
+- ✅ `controllers/ideas.controller.ts`
+- ✅ `repositories/ideas.repository.ts`
+- ✅ `hooks/useIdeas.ts`
 - ✅ `components/ideas/IdeasView.tsx` — vista Kanban completa
 - ✅ Rutas registradas en `server.ts`, vista conectada en `AppShell.tsx`
 
@@ -430,7 +401,7 @@ Panel lateral derecho visible en pantallas xl+ (1280px+), 288px de ancho. Muestr
 > - **Idea Funnel**: contadores por etapa del pipeline → calcular desde ideas API
 > - **Key Metrics (KPIs)**: velocity, cycle time, throughput, WIP → calcular desde tasks + activity_log
 > - **Weekly Trends**: completed vs created por semana → calcular desde activity_log
-> - **Keyboard Shortcuts**: lista de atajos → implementar shortcuts reales (Phase 7)
+> - **Keyboard Shortcuts**: lista de atajos → implementar shortcuts reales (Phase 6)
 > - **System Status**: API server, DB, sync, backups → health checks reales
 > - **Motivational Quote**: rotación diaria de citas → podría ser configurable o AI-generated
 
@@ -1119,21 +1090,9 @@ catOther:           { en: 'Other',                   es: 'Otros' },
 
 ---
 
-## Phase 6: AI Integration
+## Phase 6: Polish + Distribution
 
-### 6.1 AI Integration (opcional, local)
-- Ollama integration para evaluación de ideas con AI
-- AI reasoning como complemento al scoring manual
-- Recomendaciones estratégicas
-- Daily briefing ("hoy trabaja en esto, por esta razón")
-
-> **Nota**: Token/AI Budget tracking se adelantó a Phase 3 (subscriptions en Settings)
-
----
-
-## Phase 7: Polish + Distribution
-
-### 7.1 Online Daily Quote (API Integration)
+### 6.1 Online Daily Quote (API Integration)
 
 Reemplazar el array estático de citas en `RightPanel.tsx` con fetching desde una API externa.
 
@@ -1186,7 +1145,7 @@ Reemplazar el array estático de citas en `RightPanel.tsx` con fetching desde un
 
 ---
 
-### 7.2 Developer APIs (Hacker News + GitHub Trending)
+### 6.2 Developer APIs (Hacker News + GitHub Trending)
 
 Complementar la sidebar derecha con APIs orientadas a desarrolladores.
 
@@ -1243,7 +1202,7 @@ Complementar la sidebar derecha con APIs orientadas a desarrolladores.
 
 ---
 
-### 7.3 Notifications (deadline reminders, daily briefing)
+### 6.3 Notifications (deadline reminders, daily briefing)
 - Keyboard shortcuts globales
 - Export/import data (JSON backup)
 - Auto-updater (Electron)

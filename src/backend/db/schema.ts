@@ -107,16 +107,6 @@ export const ideaEvaluations = sqliteTable('idea_evaluations', {
   createdAt: text('created_at').notNull(),
 });
 
-export const subscriptions = sqliteTable('subscriptions', {
-  id: integer('id').primaryKey({ autoIncrement: true }),
-  name: text('name').notNull(),
-  cycle: text('cycle').notNull().default('monthly'),
-  resetDay: integer('reset_day').notNull().default(1),
-  budget: integer('budget').notNull().default(100),
-  currentUsed: integer('current_used').notNull().default(0),
-  updatedAt: text('updated_at').notNull(),
-});
-
 export const activityLog = sqliteTable('activity_log', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   action: text('action').notNull(),

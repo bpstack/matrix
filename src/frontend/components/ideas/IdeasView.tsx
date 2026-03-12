@@ -4,7 +4,6 @@ import {
   useIdeaEvaluation, useDecideIdea, usePromoteIdea, useUpdateIdea,
   Idea, IdeaEvaluation,
 } from '../../hooks/useIdeas';
-import { useSubscriptions } from '../../hooks/useSubscriptions';
 import { useObjectives } from '../../hooks/useObjectives';
 import { usePlans } from '../../hooks/usePlans';
 import { useMission } from '../../hooks/useMission';
@@ -33,7 +32,6 @@ const scoreLabels = {
 export function IdeasView() {
   const { language } = useUiStore();
   const { data: ideas = [], isLoading } = useIdeas();
-  const { data: subs = [] } = useSubscriptions();
   const { data: objectivesList = [] } = useObjectives();
   const { data: plansList = [] } = usePlans();
   const { data: missionData } = useMission();
@@ -79,7 +77,6 @@ export function IdeasView() {
   const [promoteParentId, setPromoteParentId] = useState<number | ''>('');
 
   const mission = Array.isArray(missionData) ? missionData[0] : missionData;
-  const highSubs = subs.filter(s => s.currentUsed >= 70);
   const evalIdea = ideas.find((i: Idea) => i.id === evalIdeaId) || null;
 
   const openEvalModal = (idea: Idea) => {
@@ -176,17 +173,6 @@ export function IdeasView() {
 
   return (
     <div className="p-4 h-full overflow-y-auto flex flex-col">
-      {/* AI Budget Banner */}
-      {highSubs.length > 0 && (
-        <div className="mb-3 px-3 py-2 bg-yellow-900/20 border border-yellow-700/30 rounded-md text-sm text-yellow-300">
-          {highSubs.map(s => (
-            <span key={s.id} className="mr-4">
-              {s.currentUsed >= 90 ? '!!' : '!'} {s.name}: {s.currentUsed}% {language === 'es' ? 'usado' : 'used'}
-            </span>
-          ))}
-        </div>
-      )}
-
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
