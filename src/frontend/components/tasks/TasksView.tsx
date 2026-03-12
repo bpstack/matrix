@@ -27,28 +27,32 @@ export function TasksView() {
   const [newTitle, setNewTitle] = useState('');
   const [newTaskDescription, setNewTaskDescription] = useState('');
   const [newPlanId, setNewPlanId] = useState<number | ''>('');
+  const [newDeadline, setNewDeadline] = useState('');
   const [addingTask, setAddingTask] = useState(false);
 
   const [editingTaskId, setEditingTaskId] = useState<number | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const [editDescription, setEditDescription] = useState('');
+  const [editDeadline, setEditDeadline] = useState('');
 
   const startEdit = (task: Task) => {
     setEditingTaskId(task.id);
     setEditTitle(task.title);
     setEditDescription(task.description ?? '');
+    setEditDeadline(task.deadline ?? '');
   };
 
   const cancelEdit = () => {
     setEditingTaskId(null);
     setEditTitle('');
     setEditDescription('');
+    setEditDeadline('');
   };
 
   const saveEdit = (id: number) => {
     const title = editTitle.trim();
     if (!title) return;
-    updateTask.mutate({ id, title, description: editDescription.trim() || undefined });
+    updateTask.mutate({ id, title, description: editDescription.trim() || undefined, deadline: editDeadline || undefined });
     cancelEdit();
   };
 
@@ -110,7 +114,7 @@ export function TasksView() {
   const selectCls = 'bg-matrix-bg border border-matrix-border rounded px-2 py-1 text-sm text-gray-300 focus:outline-none';
 
   return (
-    <div className={`p-4 ${viewMode === 'board' ? '' : 'max-w-4xl'}`}>
+    <div className="p-4">
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-lg font-medium text-gray-200">{t('tasks', language)}</h1>
         <div className="flex items-center gap-2">
@@ -134,7 +138,7 @@ export function TasksView() {
       ) : (<>
       {plans && plans.length > 0 && (
         addingTask ? (
-          <form onSubmit={e => { e.preventDefault(); if (!newTitle.trim() || !newPlanId) return; createTask.mutate({ planId: Number(newPlanId), title: newTitle.trim(), description: newTaskDescription.trim() || undefined }); setNewTitle(''); setNewTaskDescription(''); setNewPlanId(''); setAddingTask(false); }} className="flex flex-col gap-2 mb-4">
+          <form onSubmit={e => { e.preventDefault(); if (!newTitle.trim() || !newPlanId) return; createTask.mutate({ planId: Number(newPlanId), title: newTitle.trim(), description: newTaskDescription.trim() || undefined, deadline: newDeadline || undefined }); setNewTitle(''); setNewTaskDescription(''); setNewPlanId(''); setNewDeadline(''); setAddingTask(false); }} className="flex flex-col gap-2 mb-4">
             <div className="flex gap-2">
               <select autoFocus value={newPlanId} onChange={e => setNewPlanId(e.target.value ? Number(e.target.value) : '')} className={selectCls}>
                 <option value="">{t('selectPlan', language)}</option>
@@ -142,9 +146,12 @@ export function TasksView() {
               </select>
               <input value={newTitle} onChange={e => setNewTitle(e.target.value)} placeholder={t('taskTitle', language)} className="flex-1 bg-matrix-bg border border-matrix-border rounded px-2 py-1 text-sm text-gray-300 placeholder-gray-600 focus:outline-none focus:border-matrix-accent/60" />
               <button type="submit" className="px-2.5 py-1 bg-matrix-accent/10 text-matrix-accent text-sm rounded hover:bg-matrix-accent/20 transition-colors">Save</button>
-              <button type="button" onClick={() => { setAddingTask(false); setNewTitle(''); setNewTaskDescription(''); setNewPlanId(''); }} className="px-2.5 py-1 text-matrix-muted text-sm rounded hover:text-gray-200 transition-colors">Cancel</button>
+              <button type="button" onClick={() => { setAddingTask(false); setNewTitle(''); setNewTaskDescription(''); setNewPlanId(''); setNewDeadline(''); }} className="px-2.5 py-1 text-matrix-muted text-sm rounded hover:text-gray-200 transition-colors">Cancel</button>
             </div>
-            <input value={newTaskDescription} onChange={e => setNewTaskDescription(e.target.value)} placeholder={t('taskDescription', language)} className="bg-matrix-bg border border-matrix-border rounded px-2 py-1 text-sm text-gray-300 placeholder-gray-600 focus:outline-none focus:border-matrix-accent/60" />
+            <div className="flex gap-2">
+              <input value={newTaskDescription} onChange={e => setNewTaskDescription(e.target.value)} placeholder={t('taskDescription', language)} className="flex-1 bg-matrix-bg border border-matrix-border rounded px-2 py-1 text-sm text-gray-300 placeholder-gray-600 focus:outline-none focus:border-matrix-accent/60" />
+              <input type="date" value={newDeadline} onChange={e => setNewDeadline(e.target.value)} className="bg-matrix-bg border border-matrix-border rounded px-2 py-1 text-xs text-gray-300 focus:outline-none focus:border-matrix-accent/60" />
+            </div>
           </form>
         ) : (
           <div className="mb-4">
@@ -186,6 +193,12 @@ export function TasksView() {
                       className="w-full bg-matrix-bg border border-matrix-border rounded px-2 py-1 text-xs text-gray-300 placeholder-gray-600 focus:outline-none focus:border-matrix-accent/40 resize-y min-h-[3rem]"
                     />
                     <div className="flex items-center gap-2">
+                      <input
+                        type="date"
+                        value={editDeadline}
+                        onChange={e => setEditDeadline(e.target.value)}
+                        className="bg-matrix-bg border border-matrix-border rounded px-2 py-0.5 text-xs text-gray-300 focus:outline-none focus:border-matrix-accent/40"
+                      />
                       <button onClick={() => saveEdit(task.id)} className="text-xs px-2.5 py-0.5 bg-matrix-accent/10 text-matrix-accent rounded hover:bg-matrix-accent/20 transition-colors">Save</button>
                       <button onClick={cancelEdit} className="text-xs text-matrix-muted hover:text-gray-200 transition-colors">Cancel</button>
                     </div>
