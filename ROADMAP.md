@@ -1092,7 +1092,26 @@ catOther:           { en: 'Other',                   es: 'Otros' },
 
 ## Phase 6: Polish + Distribution
 
-### 6.1 Online Daily Quote (API Integration)
+### 6.1 Daily Quote API ✅
+
+Reemplazar el array estático de citas en `RightPanel.tsx` con fetching desde una API externa.
+
+- ✅ **API externa**: Integración con `https://zenquotes.io/api/random` (o fallback local)
+- ✅ **Backend**: Nuevo endpoint `/api/external/daily-quote` en `external.controller.ts`
+- ✅ **Frontend**: Nuevo hook `useDailyQuote()` en `src/frontend/hooks/useDailyQuote.ts`
+- ✅ **UI**: Reemplazar cita estática por datos dinámicos del hook
+- ✅ **Fallback**: API local con citas hardcodeadas si falla la request
+- ✅ **Refresh button**: Botón discreto ↻ para obtener nueva cita
+
+**Comportamiento:**
+- Fetch de una cita nueva cada vez que el usuario inicia sesión (abre la app)
+- Cachear la cita en localStorage con timestamp para no re-fetch si se abre la app múltiples veces en el mismo día
+- Botón de refresh para obtener nueva cita manualmente
+- Si la API falla, usar fallback local (citas hardcodeadas rotando aleatoriamente)
+
+---
+
+### 6.2 Developer APIs (Hacker News + GitHub Trending) ✅
 
 Reemplazar el array estático de citas en `RightPanel.tsx` con fetching desde una API externa.
 
@@ -1145,9 +1164,16 @@ Reemplazar el array estático de citas en `RightPanel.tsx` con fetching desde un
 
 ---
 
-### 6.2 Developer APIs (Hacker News + GitHub Trending)
+### 6.2 Developer APIs (Hacker News + GitHub Trending) ✅
 
 Complementar la sidebar derecha con APIs orientadas a desarrolladores.
+
+- ✅ **Backend**: Endpoint `/api/external/dev-feed` en `external.controller.ts`
+- ✅ **HN Integration**: Fetch a `https://hacker-news.firebaseio.com/v0/topstories.json`, obtener top 10
+- ✅ **GitHub Trending**: Fetch a GitHub API con repos trending de la última semana
+- ✅ **Frontend**: Hook `useDevFeed()` + componente en `RightPanel.tsx`
+- ✅ **Cache**: localStorage con TTL de 1 hora
+- ✅ **UI**: Dos secciones en RightPanel - "Hacker News" + "GitHub Trending"
 
 **APIs a utilizar:**
 - **Hacker News**: `https://hacker-news.firebaseio.com/v0/topstories.json` + `https://hacker-news.firebaseio.com/v0/item/{id}.json`
@@ -1220,7 +1246,7 @@ Se migra módulo a módulo, eliminando complejidad innecesaria:
 | matrix-v2 (complejo) | matrix (simplificado) |
 |-----------------------|----------------------|
 | Vision → Strategy → Pillars → Objectives | Mission → Objectives → Plans → Tasks |
-| 18 tablas | 8 tablas + 3 nuevas (scans, evaluations, subscriptions) |
+| 18 tablas | 8 tablas + 2 nuevas (scans, evaluations) |
 | Webpack | Vite |
 | PostgreSQL/Supabase ready | SQLite only (local-first) |
 | Scoring con sinónimos hardcodeados | Scoring semántico simplificado |
