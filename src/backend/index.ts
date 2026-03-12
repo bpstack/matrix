@@ -29,7 +29,7 @@ function configureCSP(): void {
       responseHeaders: {
         ...details.responseHeaders,
         'Content-Security-Policy': [
-          "default-src 'self' 'unsafe-inline' 'unsafe-eval'; connect-src 'self' http://localhost:* ws://localhost:*; img-src 'self' data:; font-src 'self' https://fonts.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;",
+          "default-src 'self' 'unsafe-inline' 'unsafe-eval'; connect-src 'self' http://localhost:* ws://localhost:* https://zenquotes.io https://hacker-news.firebaseio.com https://api.github.com; img-src 'self' data:; font-src 'self' https://fonts.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;",
         ],
       },
     });
@@ -169,6 +169,11 @@ app.on('ready', () => {
       const { shell } = require('electron');
       shell.openPath(dirPath);
     }
+  });
+
+  ipcMain.handle('open-external', async (_event, url: string) => {
+    const { shell } = require('electron');
+    shell.openExternal(url);
   });
 
   ipcMain.handle('select-import-file', async () => {

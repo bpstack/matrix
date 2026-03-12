@@ -10,6 +10,7 @@ import { ideasRouter } from './routes/ideas.routes';
 import { activityRouter } from './routes/activity.routes';
 import { statsRouter } from './routes/stats.routes';
 import { passwordsRouter } from './routes/passwords.routes';
+import { externalRouter } from './routes/external.routes';
 
 const app = express();
 
@@ -37,6 +38,7 @@ app.use('/api', ideasRouter);
 app.use('/api', activityRouter);
 app.use('/api', statsRouter);
 app.use('/api', passwordsRouter);
+app.use('/api', externalRouter);
 
 app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   const message = err instanceof Error ? err.message : 'Internal server error';

@@ -7,6 +7,7 @@ declare global {
       selectDirectory: () => Promise<string | null>;
       openDirectory: (path: string) => Promise<void>;
       selectImportFile: () => Promise<string | null>;
+      openExternal: (url: string) => Promise<void>;
     };
   }
 }
