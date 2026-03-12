@@ -1,18 +1,27 @@
 import React, { useState, useRef, useEffect } from 'react';
-import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
-  PieChart, Pie,
-} from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
 import { useMission, useCreateMission, useUpdateMission, useDeleteMission } from '../../hooks/useMission';
-import { useObjectives, useCreateObjective, useUpdateObjective, useDeleteObjective } from '../../hooks/useObjectives';
+import { useObjectives, useCreateObjective, useUpdateObjective, useDeleteObjective, Objective } from '../../hooks/useObjectives';
 import { usePlans, useCreatePlan, useUpdatePlan, useDeletePlan } from '../../hooks/usePlans';
-import { useTasks, useCreateTask, useUpdateTask, useDeleteTask } from '../../hooks/useTasks';
-import { useProjects } from '../../hooks/useProjects';
+import { useTasks, useCreateTask, useUpdateTask, useDeleteTask, Task } from '../../hooks/useTasks';
+import { useProjects, Project } from '../../hooks/useProjects';
 import { useIdeas, useCreateIdea } from '../../hooks/useIdeas';
 import { useStats } from '../../hooks/useStats';
 import { useActivity } from '../../hooks/useActivity';
 import { useUiStore } from '../../stores/ui.store';
 import { t, LangKey } from '../../lib/i18n';
+
+interface MissionResponse {
+  id: number;
+}
+
+interface ObjectiveResponse {
+  id: number;
+}
+
+interface PlanResponse {
+  id: number;
+}
 
 /* ── Shared ── */
 
@@ -25,7 +34,10 @@ function progressColor(value: number): string {
 function ProgressBar({ value, className = '' }: { value: number; className?: string }) {
   return (
     <div className={`w-full bg-matrix-border/50 rounded-full h-1 ${className}`}>
-      <div className={`${progressColor(value)} h-1 rounded-full transition-all duration-300`} style={{ width: `${value}%` }} />
+      <div
+        className={`${progressColor(value)} h-1 rounded-full transition-all duration-300`}
+        style={{ width: `${value}%` }}
+      />
     </div>
   );
 }
@@ -48,7 +60,9 @@ function ComingSoonCard({ title, icon, description }: { title: string; icon: str
       <div className="flex flex-col items-center justify-center py-6 text-matrix-muted">
         <span className="text-xl mb-2 opacity-20">{icon}</span>
         <p className="text-xs">{description}</p>
-        <span className="mt-1.5 text-xs px-2 py-0.5 bg-matrix-border/50 text-matrix-muted rounded-full">Coming soon</span>
+        <span className="mt-1.5 text-xs px-2 py-0.5 bg-matrix-border/50 text-matrix-muted rounded-full">
+          Coming soon
+        </span>
       </div>
     </SectionCard>
   );
@@ -56,7 +70,12 @@ function ComingSoonCard({ title, icon, description }: { title: string; icon: str
 
 /* ── Action buttons (edit + delete, shown on hover) ── */
 
-function ActionButtons({ onEdit, onDelete, deleteLabel = '✕', size = 'xs' }: {
+function ActionButtons({
+  onEdit,
+  onDelete,
+  deleteLabel = '✕',
+  size = 'xs',
+}: {
   onEdit: () => void;
   onDelete: () => void;
   deleteLabel?: string;
@@ -65,8 +84,24 @@ function ActionButtons({ onEdit, onDelete, deleteLabel = '✕', size = 'xs' }: {
   const cls = size === 'xs' ? 'text-[10px]' : 'text-xs';
   return (
     <span className="inline-flex items-center gap-1">
-      <button onClick={e => { e.stopPropagation(); onEdit(); }} className={`${cls} text-matrix-muted/50 hover:text-matrix-accent transition-colors`}>✎</button>
-      <button onClick={e => { e.stopPropagation(); onDelete(); }} className={`${cls} text-matrix-muted/50 hover:text-matrix-danger transition-colors`}>{deleteLabel}</button>
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          onEdit();
+        }}
+        className={`${cls} text-matrix-muted/50 hover:text-matrix-accent transition-colors`}
+      >
+        ✎
+      </button>
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          onDelete();
+        }}
+        className={`${cls} text-matrix-muted/50 hover:text-matrix-danger transition-colors`}
+      >
+        {deleteLabel}
+      </button>
     </span>
   );
 }
@@ -74,15 +109,25 @@ function ActionButtons({ onEdit, onDelete, deleteLabel = '✕', size = 'xs' }: {
 function InlineEdit({ value, onSave, onCancel }: { value: string; onSave: (v: string) => void; onCancel: () => void }) {
   const [draft, setDraft] = useState(value);
   const inputRef = useRef<HTMLInputElement>(null);
-  useEffect(() => { inputRef.current?.focus(); inputRef.current?.select(); }, []);
-  const commit = () => { const t = draft.trim(); if (t && t !== value) onSave(t); else onCancel(); };
+  useEffect(() => {
+    inputRef.current?.focus();
+    inputRef.current?.select();
+  }, []);
+  const commit = () => {
+    const t = draft.trim();
+    if (t && t !== value) onSave(t);
+    else onCancel();
+  };
   return (
     <input
       ref={inputRef}
       value={draft}
-      onChange={e => setDraft(e.target.value)}
+      onChange={(e) => setDraft(e.target.value)}
       onBlur={commit}
-      onKeyDown={e => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') onCancel(); }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') commit();
+        if (e.key === 'Escape') onCancel();
+      }}
       className="bg-matrix-bg border border-matrix-accent/40 rounded px-2 py-0.5 text-sm text-gray-200 focus:outline-none w-full"
     />
   );
@@ -99,7 +144,9 @@ function StrategicSchemaSetup() {
   const [missionTitle, setMissionTitle] = useState('');
   const [missionDesc, setMissionDesc] = useState('');
   const [objectiveInputs, setObjectiveInputs] = useState([{ title: '', description: '' }]);
-  const [planInputs, setPlanInputs] = useState<Record<number, { title: string; description: string }[]>>({ 0: [{ title: '', description: '' }] });
+  const [planInputs, setPlanInputs] = useState<Record<number, { title: string; description: string }[]>>({
+    0: [{ title: '', description: '' }],
+  });
   const [taskInputs, setTaskInputs] = useState<Record<string, { title: string; priority: string }[]>>({});
 
   const createMission = useCreateMission();
@@ -176,28 +223,43 @@ function StrategicSchemaSetup() {
 
   const canAdvance = () => {
     switch (step) {
-      case 'mission': return missionTitle.trim().length > 0;
-      case 'objectives': return objectiveInputs.some(o => o.title.trim().length > 0);
-      case 'plans': return Object.values(planInputs).some(arr => arr.some(p => p.title.trim().length > 0));
-      case 'tasks': return true;
+      case 'mission':
+        return missionTitle.trim().length > 0;
+      case 'objectives':
+        return objectiveInputs.some((o) => o.title.trim().length > 0);
+      case 'plans':
+        return Object.values(planInputs).some((arr) => arr.some((p) => p.title.trim().length > 0));
+      case 'tasks':
+        return true;
     }
   };
 
   const saveAll = async () => {
     setSaving(true);
     try {
-      const missionRes: any = await createMission.mutateAsync({ title: missionTitle.trim(), description: missionDesc.trim() || undefined });
+      const missionRes = await createMission.mutateAsync({
+        title: missionTitle.trim(),
+        description: missionDesc.trim() || undefined,
+      }) as MissionResponse;
       const missionId = missionRes.id;
       for (let oi = 0; oi < objectiveInputs.length; oi++) {
         const obj = objectiveInputs[oi];
         if (!obj.title.trim()) continue;
-        const objRes: any = await createObjective.mutateAsync({ missionId, title: obj.title.trim(), description: obj.description.trim() || undefined });
+        const objRes = await createObjective.mutateAsync({
+          missionId,
+          title: obj.title.trim(),
+          description: obj.description.trim() || undefined,
+        }) as ObjectiveResponse;
         const objId = objRes.id;
         const objPlans = planInputs[oi] || [];
         for (let pi = 0; pi < objPlans.length; pi++) {
           const plan = objPlans[pi];
           if (!plan.title.trim()) continue;
-          const planRes: any = await createPlan.mutateAsync({ objectiveId: objId, title: plan.title.trim(), description: plan.description.trim() || undefined });
+          const planRes = await createPlan.mutateAsync({
+            objectiveId: objId,
+            title: plan.title.trim(),
+            description: plan.description.trim() || undefined,
+          }) as PlanResponse;
           const planId = planRes.id;
           const key = `${oi}-${pi}`;
           const planTasks = taskInputs[key] || [];
@@ -212,7 +274,8 @@ function StrategicSchemaSetup() {
     }
   };
 
-  const inputCls = 'w-full bg-matrix-bg border border-matrix-border rounded px-3 py-1.5 text-sm text-gray-300 placeholder-gray-600 focus:outline-none focus:border-matrix-accent/60 transition-colors';
+  const inputCls =
+    'w-full bg-matrix-bg border border-matrix-border rounded px-3 py-1.5 text-sm text-gray-300 placeholder-gray-600 focus:outline-none focus:border-matrix-accent/60 transition-colors';
 
   return (
     <div>
@@ -221,7 +284,7 @@ function StrategicSchemaSetup() {
         {WIZARD_STEPS.map((s, i) => (
           <button
             key={s}
-            onClick={() => i <= stepIndex ? goToStep(s) : undefined}
+            onClick={() => (i <= stepIndex ? goToStep(s) : undefined)}
             className={`flex-1 py-1.5 px-2 text-xs transition-colors capitalize ${
               s === step
                 ? 'bg-matrix-accent/10 text-matrix-accent'
@@ -240,11 +303,25 @@ function StrategicSchemaSetup() {
         <div className="space-y-3">
           <div>
             <label className="block text-xs text-matrix-muted mb-1">Title</label>
-            <input value={missionTitle} onChange={e => setMissionTitle(e.target.value)} placeholder="Your strategic mission..." className={inputCls} autoFocus />
+            <input
+              value={missionTitle}
+              onChange={(e) => setMissionTitle(e.target.value)}
+              placeholder="Your strategic mission..."
+              className={inputCls}
+              autoFocus
+            />
           </div>
           <div>
-            <label className="block text-xs text-matrix-muted mb-1">Description <span className="text-gray-600">(optional)</span></label>
-            <textarea value={missionDesc} onChange={e => setMissionDesc(e.target.value)} placeholder="What does this mission aim to achieve?" rows={2} className={`${inputCls} resize-none`} />
+            <label className="block text-xs text-matrix-muted mb-1">
+              Description <span className="text-gray-600">(optional)</span>
+            </label>
+            <textarea
+              value={missionDesc}
+              onChange={(e) => setMissionDesc(e.target.value)}
+              placeholder="What does this mission aim to achieve?"
+              rows={2}
+              className={`${inputCls} resize-none`}
+            />
           </div>
         </div>
       )}
@@ -256,16 +333,45 @@ function StrategicSchemaSetup() {
             <div key={i} className="flex gap-2 items-start">
               <span className="text-xs text-matrix-muted w-4 text-right shrink-0 pt-2">{i + 1}.</span>
               <div className="flex-1 space-y-1">
-                <input value={obj.title} onChange={e => { const next = [...objectiveInputs]; next[i] = { ...next[i], title: e.target.value }; setObjectiveInputs(next); }} placeholder={`Objective ${i + 1}...`} className={`flex-1 ${inputCls}`} />
-                <textarea value={obj.description} onChange={e => { const next = [...objectiveInputs]; next[i] = { ...next[i], description: e.target.value }; setObjectiveInputs(next); }} placeholder="Description (optional)..." className={`w-full text-sm bg-matrix-surface border border-matrix-border rounded px-2 py-1.5 text-gray-200 placeholder-matrix-muted/50 focus:outline-none focus:border-matrix-accent resize-none`} rows={2} />
+                <input
+                  value={obj.title}
+                  onChange={(e) => {
+                    const next = [...objectiveInputs];
+                    next[i] = { ...next[i], title: e.target.value };
+                    setObjectiveInputs(next);
+                  }}
+                  placeholder={`Objective ${i + 1}...`}
+                  className={`flex-1 ${inputCls}`}
+                />
+                <textarea
+                  value={obj.description}
+                  onChange={(e) => {
+                    const next = [...objectiveInputs];
+                    next[i] = { ...next[i], description: e.target.value };
+                    setObjectiveInputs(next);
+                  }}
+                  placeholder="Description (optional)..."
+                  className={`w-full text-sm bg-matrix-surface border border-matrix-border rounded px-2 py-1.5 text-gray-200 placeholder-matrix-muted/50 focus:outline-none focus:border-matrix-accent resize-none`}
+                  rows={2}
+                />
               </div>
               {objectiveInputs.length > 1 && (
-                <button onClick={() => removeObjective(i)} className="text-xs text-matrix-muted hover:text-matrix-danger transition-colors mt-2">✕</button>
+                <button
+                  onClick={() => removeObjective(i)}
+                  className="text-xs text-matrix-muted hover:text-matrix-danger transition-colors mt-2"
+                >
+                  ✕
+                </button>
               )}
             </div>
           ))}
           {objectiveInputs.length < 10 && (
-            <button onClick={addObjective} className="text-xs text-matrix-muted hover:text-matrix-accent transition-colors ml-6">+ Add objective</button>
+            <button
+              onClick={addObjective}
+              className="text-xs text-matrix-muted hover:text-matrix-accent transition-colors ml-6"
+            >
+              + Add objective
+            </button>
           )}
         </div>
       )}
@@ -278,16 +384,41 @@ function StrategicSchemaSetup() {
             const plans = planInputs[oi] || [{ title: '', description: '' }];
             return (
               <div key={oi}>
-                <p className="text-xs text-matrix-muted mb-1.5"><span className="text-matrix-accent/50">{oi + 1}.</span> {obj.title}</p>
+                <p className="text-xs text-matrix-muted mb-1.5">
+                  <span className="text-matrix-accent/50">{oi + 1}.</span> {obj.title}
+                </p>
                 <div className="ml-5 space-y-1.5">
                   {plans.map((plan, pi) => (
                     <div key={pi} className="flex gap-2 items-center">
                       <span className="text-xs text-matrix-muted w-3 text-right shrink-0">{pi + 1}.</span>
-                      <input value={plan.title} onChange={e => { const next = [...plans]; next[pi] = { ...next[pi], title: e.target.value }; setPlanInputs({ ...planInputs, [oi]: next }); }} placeholder={`Plan ${pi + 1}...`} className={`flex-1 ${inputCls}`} />
-                      {plans.length > 1 && <button onClick={() => removePlan(oi, pi)} className="text-xs text-matrix-muted hover:text-matrix-danger transition-colors">✕</button>}
+                      <input
+                        value={plan.title}
+                        onChange={(e) => {
+                          const next = [...plans];
+                          next[pi] = { ...next[pi], title: e.target.value };
+                          setPlanInputs({ ...planInputs, [oi]: next });
+                        }}
+                        placeholder={`Plan ${pi + 1}...`}
+                        className={`flex-1 ${inputCls}`}
+                      />
+                      {plans.length > 1 && (
+                        <button
+                          onClick={() => removePlan(oi, pi)}
+                          className="text-xs text-matrix-muted hover:text-matrix-danger transition-colors"
+                        >
+                          ✕
+                        </button>
+                      )}
                     </div>
                   ))}
-                  {plans.length < 10 && <button onClick={() => addPlan(oi)} className="text-xs text-matrix-muted hover:text-matrix-accent transition-colors ml-5">+ Add plan</button>}
+                  {plans.length < 10 && (
+                    <button
+                      onClick={() => addPlan(oi)}
+                      className="text-xs text-matrix-muted hover:text-matrix-accent transition-colors ml-5"
+                    >
+                      + Add plan
+                    </button>
+                  )}
                 </div>
               </div>
             );
@@ -316,17 +447,48 @@ function StrategicSchemaSetup() {
                     {tasks.map((task, ti) => (
                       <div key={ti} className="flex gap-2 items-center">
                         <span className="text-xs text-matrix-muted w-3 text-right shrink-0">{ti + 1}.</span>
-                        <input value={task.title} onChange={e => { const next = [...tasks]; next[ti] = { ...next[ti], title: e.target.value }; setTaskInputs({ ...taskInputs, [key]: next }); }} placeholder={`Task ${ti + 1}...`} className={`flex-1 ${inputCls}`} />
-                        <select value={task.priority} onChange={e => { const next = [...tasks]; next[ti] = { ...next[ti], priority: e.target.value }; setTaskInputs({ ...taskInputs, [key]: next }); }} className="bg-matrix-bg border border-matrix-border rounded px-1.5 py-1.5 text-xs text-matrix-muted focus:outline-none">
+                        <input
+                          value={task.title}
+                          onChange={(e) => {
+                            const next = [...tasks];
+                            next[ti] = { ...next[ti], title: e.target.value };
+                            setTaskInputs({ ...taskInputs, [key]: next });
+                          }}
+                          placeholder={`Task ${ti + 1}...`}
+                          className={`flex-1 ${inputCls}`}
+                        />
+                        <select
+                          value={task.priority}
+                          onChange={(e) => {
+                            const next = [...tasks];
+                            next[ti] = { ...next[ti], priority: e.target.value };
+                            setTaskInputs({ ...taskInputs, [key]: next });
+                          }}
+                          className="bg-matrix-bg border border-matrix-border rounded px-1.5 py-1.5 text-xs text-matrix-muted focus:outline-none"
+                        >
                           <option value="low">{t('low', language)}</option>
                           <option value="medium">{t('medium', language)}</option>
                           <option value="high">{t('high', language)}</option>
                           <option value="urgent">{t('urgent', language)}</option>
                         </select>
-                        {tasks.length > 1 && <button onClick={() => removeTask(key, ti)} className="text-xs text-matrix-muted hover:text-matrix-danger transition-colors">✕</button>}
+                        {tasks.length > 1 && (
+                          <button
+                            onClick={() => removeTask(key, ti)}
+                            className="text-xs text-matrix-muted hover:text-matrix-danger transition-colors"
+                          >
+                            ✕
+                          </button>
+                        )}
                       </div>
                     ))}
-                    {tasks.length < 10 && <button onClick={() => addTask(key)} className="text-xs text-matrix-muted hover:text-matrix-accent transition-colors ml-5">+ Add task</button>}
+                    {tasks.length < 10 && (
+                      <button
+                        onClick={() => addTask(key)}
+                        className="text-xs text-matrix-muted hover:text-matrix-accent transition-colors ml-5"
+                      >
+                        + Add task
+                      </button>
+                    )}
                   </div>
                 </div>
               );
@@ -337,18 +499,36 @@ function StrategicSchemaSetup() {
 
       {/* Nav */}
       <div className="flex items-center justify-between mt-6 pt-3 border-t border-matrix-border">
-        <button onClick={() => stepIndex > 0 && goToStep(WIZARD_STEPS[stepIndex - 1])} className={`text-xs px-3 py-1.5 rounded transition-colors ${stepIndex > 0 ? 'text-gray-400 hover:text-gray-300' : 'text-gray-700 cursor-default'}`}>Back</button>
+        <button
+          onClick={() => stepIndex > 0 && goToStep(WIZARD_STEPS[stepIndex - 1])}
+          className={`text-xs px-3 py-1.5 rounded transition-colors ${stepIndex > 0 ? 'text-gray-400 hover:text-gray-300' : 'text-gray-700 cursor-default'}`}
+        >
+          Back
+        </button>
         <div className="flex gap-1">
           {WIZARD_STEPS.map((_, i) => (
-            <div key={i} className={`w-1 h-1 rounded-full ${i <= stepIndex ? 'bg-matrix-accent' : 'bg-matrix-border'}`} />
+            <div
+              key={i}
+              className={`w-1 h-1 rounded-full ${i <= stepIndex ? 'bg-matrix-accent' : 'bg-matrix-border'}`}
+            />
           ))}
         </div>
         {step === 'tasks' ? (
-          <button onClick={saveAll} disabled={saving || !canAdvance()} className="text-xs px-4 py-1.5 bg-matrix-accent/90 text-matrix-bg font-medium rounded hover:bg-matrix-accent transition-colors disabled:opacity-50">
+          <button
+            onClick={saveAll}
+            disabled={saving || !canAdvance()}
+            className="text-xs px-4 py-1.5 bg-matrix-accent/90 text-matrix-bg font-medium rounded hover:bg-matrix-accent transition-colors disabled:opacity-50"
+          >
             {saving ? 'Saving...' : 'Create Schema'}
           </button>
         ) : (
-          <button onClick={() => canAdvance() && goToStep(WIZARD_STEPS[stepIndex + 1])} disabled={!canAdvance()} className="text-xs px-4 py-1.5 bg-matrix-accent/10 text-matrix-accent rounded hover:bg-matrix-accent/20 transition-colors disabled:opacity-50">Next</button>
+          <button
+            onClick={() => canAdvance() && goToStep(WIZARD_STEPS[stepIndex + 1])}
+            disabled={!canAdvance()}
+            className="text-xs px-4 py-1.5 bg-matrix-accent/10 text-matrix-accent rounded hover:bg-matrix-accent/20 transition-colors disabled:opacity-50"
+          >
+            Next
+          </button>
         )}
       </div>
     </div>
@@ -394,16 +574,30 @@ function StrategicSchemaActive() {
   if (!mission) return null;
 
   const statusIcon: Record<string, string> = { pending: '○', in_progress: '◐', done: '●' };
-  const statusColor: Record<string, string> = { pending: 'text-gray-500', in_progress: 'text-matrix-warning', done: 'text-matrix-success' };
-  const priorityColor: Record<string, string> = { low: 'text-gray-500', medium: 'text-blue-400', high: 'text-orange-400', urgent: 'text-red-400' };
+  const statusColor: Record<string, string> = {
+    pending: 'text-gray-500',
+    in_progress: 'text-matrix-warning',
+    done: 'text-matrix-success',
+  };
+  const priorityColor: Record<string, string> = {
+    low: 'text-gray-500',
+    medium: 'text-blue-400',
+    high: 'text-orange-400',
+    urgent: 'text-red-400',
+  };
   const nextStatus: Record<string, string> = { pending: 'in_progress', in_progress: 'done', done: 'pending' };
 
   const confirmDelete = (key: string, deleteFn: () => void) => {
-    if (deleteConfirm === key) { deleteFn(); setDeleteConfirm(null); }
-    else { setDeleteConfirm(key); }
+    if (deleteConfirm === key) {
+      deleteFn();
+      setDeleteConfirm(null);
+    } else {
+      setDeleteConfirm(key);
+    }
   };
 
-  const inlineCls = 'flex-1 bg-transparent border border-matrix-border/50 rounded px-2 py-1 text-sm text-gray-300 placeholder-gray-600 focus:outline-none focus:border-matrix-accent/40';
+  const inlineCls =
+    'flex-1 bg-transparent border border-matrix-border/50 rounded px-2 py-1 text-sm text-gray-300 placeholder-gray-600 focus:outline-none focus:border-matrix-accent/40';
 
   return (
     <div>
@@ -411,10 +605,17 @@ function StrategicSchemaActive() {
       <div className="group flex items-center justify-between mb-1 border-l-2 border-matrix-accent pl-2">
         {editing === 'mission' ? (
           <div className="flex-1 space-y-1">
-            <InlineEdit value={mission.title} onSave={title => { updateMission.mutate({ id: mission.id, title }); setEditing(null); }} onCancel={() => setEditing(null)} />
+            <InlineEdit
+              value={mission.title}
+              onSave={(title) => {
+                updateMission.mutate({ id: mission.id, title });
+                setEditing(null);
+              }}
+              onCancel={() => setEditing(null)}
+            />
             <textarea
               value={mission.description || ''}
-              onChange={e => updateMission.mutate({ id: mission.id, description: e.target.value || undefined })}
+              onChange={(e) => updateMission.mutate({ id: mission.id, description: e.target.value || undefined })}
               placeholder="Description (optional)..."
               className="w-full text-xs bg-matrix-bg border border-matrix-border rounded px-2 py-1 text-gray-300 placeholder-matrix-muted/50 focus:outline-none focus:border-matrix-accent/40 resize-none"
               rows={2}
@@ -428,7 +629,9 @@ function StrategicSchemaActive() {
           {editing !== 'mission' && (
             <ActionButtons
               onEdit={() => setEditing('mission')}
-              onDelete={() => confirmDelete('mission', () => deleteMission.mutate({ id: mission.id, action: 'cascade' }))}
+              onDelete={() =>
+                confirmDelete('mission', () => deleteMission.mutate({ id: mission.id, action: 'cascade' }))
+              }
               deleteLabel={deleteConfirm === 'mission' ? '?' : '✕'}
             />
           )}
@@ -437,7 +640,9 @@ function StrategicSchemaActive() {
       {!editing && mission.description && <p className="text-xs text-matrix-muted mb-1.5">{mission.description}</p>}
       <div className="flex items-center gap-2 mb-3">
         <span className="text-xs font-semibold text-matrix-accent uppercase tracking-wider">Meta</span>
-        <div className="flex-1"><ProgressBar value={mission.progress} /></div>
+        <div className="flex-1">
+          <ProgressBar value={mission.progress} />
+        </div>
         <span className="text-xs font-mono text-matrix-muted w-8 text-right">{mission.progress}%</span>
       </div>
 
@@ -447,42 +652,91 @@ function StrategicSchemaActive() {
           const objKey = `obj-${obj.id}`;
           return (
             <div key={obj.id} className="border border-matrix-border/40 rounded overflow-hidden">
-              <div className="group flex items-start gap-2 px-3 py-1.5 cursor-pointer hover:bg-white/[0.02] transition-colors" onClick={() => { if (editing !== objKey) { setExpandedObj(expandedObj === obj.id ? null : obj.id); setExpandedPlan(null); } }}>
-                <span className={`text-[10px] text-matrix-muted transition-transform mt-1 ${expandedObj === obj.id ? 'rotate-90' : ''}`}>▸</span>
+              <div
+                className="group flex items-start gap-2 px-3 py-1.5 cursor-pointer hover:bg-white/[0.02] transition-colors"
+                onClick={() => {
+                  if (editing !== objKey) {
+                    setExpandedObj(expandedObj === obj.id ? null : obj.id);
+                    setExpandedPlan(null);
+                  }
+                }}
+              >
+                <span
+                  className={`text-[10px] text-matrix-muted transition-transform mt-1 ${expandedObj === obj.id ? 'rotate-90' : ''}`}
+                >
+                  ▸
+                </span>
                 <div className="flex-1 min-w-0">
                   {editing === objKey ? (
                     <div className="space-y-1">
-                      <input 
-                        value={editDrafts[objKey]?.title ?? obj.title} 
-                        onChange={e => setEditDrafts(d => ({ ...d, [objKey]: { ...d[objKey], title: e.target.value } }))} 
-                        onBlur={() => { updateObjective.mutate({ id: obj.id, title: editDrafts[objKey]?.title ?? obj.title }); setEditing(null); }}
-                        className="bg-matrix-bg border border-matrix-accent/40 rounded px-2 py-0.5 text-sm text-gray-200 focus:outline-none w-full" 
+                      <input
+                        value={editDrafts[objKey]?.title ?? obj.title}
+                        onChange={(e) =>
+                          setEditDrafts((d) => ({ ...d, [objKey]: { ...d[objKey], title: e.target.value } }))
+                        }
+                        onBlur={() => {
+                          updateObjective.mutate({ id: obj.id, title: editDrafts[objKey]?.title ?? obj.title });
+                          setEditing(null);
+                        }}
+                        className="bg-matrix-bg border border-matrix-accent/40 rounded px-2 py-0.5 text-sm text-gray-200 focus:outline-none w-full"
                       />
-                      <textarea 
-                        value={editDrafts[objKey]?.description ?? obj.description ?? ''} 
-                        onChange={e => setEditDrafts(d => ({ ...d, [objKey]: { ...d[objKey], description: e.target.value } }))} 
-                        onBlur={() => { updateObjective.mutate({ id: obj.id, description: editDrafts[objKey]?.description ?? obj.description ?? undefined }); setEditing(null); }}
-                        placeholder="Description (optional)..." 
-                        className="w-full text-xs bg-matrix-bg border border-matrix-border rounded px-2 py-1 text-gray-300 placeholder-matrix-muted/50 focus:outline-none focus:border-matrix-accent resize-none" 
-                        rows={2} 
+                      <textarea
+                        value={editDrafts[objKey]?.description ?? obj.description ?? ''}
+                        onChange={(e) =>
+                          setEditDrafts((d) => ({ ...d, [objKey]: { ...d[objKey], description: e.target.value } }))
+                        }
+                        onBlur={() => {
+                          updateObjective.mutate({
+                            id: obj.id,
+                            description: editDrafts[objKey]?.description ?? obj.description ?? undefined,
+                          });
+                          setEditing(null);
+                        }}
+                        placeholder="Description (optional)..."
+                        className="w-full text-xs bg-matrix-bg border border-matrix-border rounded px-2 py-1 text-gray-300 placeholder-matrix-muted/50 focus:outline-none focus:border-matrix-accent resize-none"
+                        rows={2}
                       />
-                      <button onClick={() => { updateObjective.mutate({ id: obj.id, title: editDrafts[objKey]?.title ?? obj.title, description: editDrafts[objKey]?.description ?? obj.description ?? undefined }); setEditing(null); }} className="text-xs text-matrix-muted hover:text-gray-200">Done</button>
+                      <button
+                        onClick={() => {
+                          updateObjective.mutate({
+                            id: obj.id,
+                            title: editDrafts[objKey]?.title ?? obj.title,
+                            description: editDrafts[objKey]?.description ?? obj.description ?? undefined,
+                          });
+                          setEditing(null);
+                        }}
+                        className="text-xs text-matrix-muted hover:text-gray-200"
+                      >
+                        Done
+                      </button>
                     </div>
                   ) : (
                     <span className="text-sm text-gray-300 block truncate">{obj.title}</span>
                   )}
                   {obj.description && expandedObj === obj.id && (
-                    <span className="text-xs text-matrix-muted/70 block mt-0.5 whitespace-pre-wrap">{obj.description}</span>
+                    <span className="text-xs text-matrix-muted/70 block mt-0.5 whitespace-pre-wrap">
+                      {obj.description}
+                    </span>
                   )}
                 </div>
                 <div className="flex flex-col items-end gap-0.5">
-                  <div className="w-12"><ProgressBar value={obj.progress} /></div>
+                  <div className="w-12">
+                    <ProgressBar value={obj.progress} />
+                  </div>
                   <span className="text-[10px] text-gray-500">Objetivo {idx + 1}</span>
                 </div>
                 <span className="text-[10px] font-mono text-matrix-muted/60 ml-1">{obj.progress}%</span>
                 <ActionButtons
-                  onEdit={() => { setEditing(objKey); setEditDrafts(d => ({ ...d, [objKey]: { title: obj.title, description: obj.description || '' } })); }}
-                  onDelete={() => confirmDelete(objKey, () => deleteObjective.mutate({ id: obj.id, action: 'cascade' }))}
+                  onEdit={() => {
+                    setEditing(objKey);
+                    setEditDrafts((d) => ({
+                      ...d,
+                      [objKey]: { title: obj.title, description: obj.description || '' },
+                    }));
+                  }}
+                  onDelete={() =>
+                    confirmDelete(objKey, () => deleteObjective.mutate({ id: obj.id, action: 'cascade' }))
+                  }
                   deleteLabel={deleteConfirm === objKey ? '?' : '✕'}
                 />
               </div>
@@ -493,37 +747,80 @@ function StrategicSchemaActive() {
                       const planKey = `plan-${plan.id}`;
                       return (
                         <div key={plan.id}>
-                          <div className="group flex items-start gap-2 py-1 px-2 rounded cursor-pointer hover:bg-white/[0.02] transition-colors" onClick={() => { if (editing !== planKey) setExpandedPlan(expandedPlan === plan.id ? null : plan.id); }}>
-                            <span className={`text-[9px] text-matrix-muted transition-transform mt-0.5 ${expandedPlan === plan.id ? 'rotate-90' : ''}`}>▸</span>
+                          <div
+                            className="group flex items-start gap-2 py-1 px-2 rounded cursor-pointer hover:bg-white/[0.02] transition-colors"
+                            onClick={() => {
+                              if (editing !== planKey) setExpandedPlan(expandedPlan === plan.id ? null : plan.id);
+                            }}
+                          >
+                            <span
+                              className={`text-[9px] text-matrix-muted transition-transform mt-0.5 ${expandedPlan === plan.id ? 'rotate-90' : ''}`}
+                            >
+                              ▸
+                            </span>
                             {editing === planKey ? (
-                              <InlineEdit value={plan.title} onSave={title => { updatePlan.mutate({ id: plan.id, title }); setEditing(null); }} onCancel={() => setEditing(null)} />
+                              <InlineEdit
+                                value={plan.title}
+                                onSave={(title) => {
+                                  updatePlan.mutate({ id: plan.id, title });
+                                  setEditing(null);
+                                }}
+                                onCancel={() => setEditing(null)}
+                              />
                             ) : (
                               <span className="text-sm text-gray-400 flex-1">{plan.title}</span>
                             )}
                             <div className="flex flex-col items-end gap-0.5">
-                              <div className="w-10"><ProgressBar value={plan.progress} /></div>
+                              <div className="w-10">
+                                <ProgressBar value={plan.progress} />
+                              </div>
                               <span className="text-[9px] text-gray-500">Plan {planIdx + 1}</span>
                             </div>
                             <span className="text-[10px] font-mono text-matrix-muted/60 ml-1">{plan.progress}%</span>
                             <ActionButtons
                               onEdit={() => setEditing(planKey)}
-                              onDelete={() => confirmDelete(planKey, () => deletePlan.mutate({ id: plan.id, action: 'cascade' }))}
+                              onDelete={() =>
+                                confirmDelete(planKey, () => deletePlan.mutate({ id: plan.id, action: 'cascade' }))
+                              }
                               deleteLabel={deleteConfirm === planKey ? '?' : '✕'}
                             />
                           </div>
                           {expandedPlan === plan.id && (
                             <div className="ml-6 mt-0.5 space-y-px mb-1.5">
-                              {planTasks?.map(task => {
+                              {planTasks?.map((task) => {
                                 const taskKey = `task-${task.id}`;
                                 return (
-                                  <div key={task.id} className="group flex items-center gap-1.5 py-1 px-1.5 rounded hover:bg-white/[0.02]">
-                                    <button onClick={() => updateTask.mutate({ id: task.id, status: nextStatus[task.status] })} className={`text-xs ${statusColor[task.status]}`}>{statusIcon[task.status]}</button>
+                                  <div
+                                    key={task.id}
+                                    className="group flex items-center gap-1.5 py-1 px-1.5 rounded hover:bg-white/[0.02]"
+                                  >
+                                    <button
+                                      onClick={() =>
+                                        updateTask.mutate({ id: task.id, status: nextStatus[task.status] })
+                                      }
+                                      className={`text-xs ${statusColor[task.status]}`}
+                                    >
+                                      {statusIcon[task.status]}
+                                    </button>
                                     {editing === taskKey ? (
-                                      <InlineEdit value={task.title} onSave={title => { updateTask.mutate({ id: task.id, title }); setEditing(null); }} onCancel={() => setEditing(null)} />
+                                      <InlineEdit
+                                        value={task.title}
+                                        onSave={(title) => {
+                                          updateTask.mutate({ id: task.id, title });
+                                          setEditing(null);
+                                        }}
+                                        onCancel={() => setEditing(null)}
+                                      />
                                     ) : (
-                                      <span className={`text-sm flex-1 ${task.status === 'done' ? 'line-through text-gray-600' : 'text-gray-400'}`}>{task.title}</span>
+                                      <span
+                                        className={`text-sm flex-1 ${task.status === 'done' ? 'line-through text-gray-600' : 'text-gray-400'}`}
+                                      >
+                                        {task.title}
+                                      </span>
                                     )}
-                                    <span className={`text-[10px] ${priorityColor[task.priority]}`}>{t(task.priority as any, language)}</span>
+                                    <span className={`text-[10px] ${priorityColor[task.priority]}`}>
+                                      {t(task.priority as LangKey, language)}
+                                    </span>
                                     {editing !== taskKey && (
                                       <ActionButtons
                                         onEdit={() => setEditing(taskKey)}
@@ -534,11 +831,32 @@ function StrategicSchemaActive() {
                                 );
                               })}
                               {addingTask ? (
-                                <form className="flex gap-1.5 mt-0.5" onSubmit={e => { e.preventDefault(); if (!newTaskTitle.trim()) return; createTask.mutate({ planId: plan.id, title: newTaskTitle.trim() }); setNewTaskTitle(''); setAddingTask(false); }}>
-                                  <input value={newTaskTitle} onChange={e => setNewTaskTitle(e.target.value)} placeholder="Task..." autoFocus onBlur={() => !newTaskTitle.trim() && setAddingTask(false)} className={inlineCls} />
+                                <form
+                                  className="flex gap-1.5 mt-0.5"
+                                  onSubmit={(e) => {
+                                    e.preventDefault();
+                                    if (!newTaskTitle.trim()) return;
+                                    createTask.mutate({ planId: plan.id, title: newTaskTitle.trim() });
+                                    setNewTaskTitle('');
+                                    setAddingTask(false);
+                                  }}
+                                >
+                                  <input
+                                    value={newTaskTitle}
+                                    onChange={(e) => setNewTaskTitle(e.target.value)}
+                                    placeholder="Task..."
+                                    autoFocus
+                                    onBlur={() => !newTaskTitle.trim() && setAddingTask(false)}
+                                    className={inlineCls}
+                                  />
                                 </form>
                               ) : (
-                                <button onClick={() => setAddingTask(true)} className="text-xs text-gray-500 hover:text-matrix-accent transition-colors ml-1 mt-0.5">+ task</button>
+                                <button
+                                  onClick={() => setAddingTask(true)}
+                                  className="text-xs text-gray-500 hover:text-matrix-accent transition-colors ml-1 mt-0.5"
+                                >
+                                  + task
+                                </button>
                               )}
                             </div>
                           )}
@@ -546,11 +864,32 @@ function StrategicSchemaActive() {
                       );
                     })}
                     {addingPlan ? (
-                      <form className="flex gap-1.5 mt-0.5" onSubmit={e => { e.preventDefault(); if (!newPlanTitle.trim()) return; createPlan.mutate({ objectiveId: obj.id, title: newPlanTitle.trim() }); setNewPlanTitle(''); setAddingPlan(false); }}>
-                        <input value={newPlanTitle} onChange={e => setNewPlanTitle(e.target.value)} placeholder="Plan..." autoFocus onBlur={() => !newPlanTitle.trim() && setAddingPlan(false)} className={inlineCls} />
+                      <form
+                        className="flex gap-1.5 mt-0.5"
+                        onSubmit={(e) => {
+                          e.preventDefault();
+                          if (!newPlanTitle.trim()) return;
+                          createPlan.mutate({ objectiveId: obj.id, title: newPlanTitle.trim() });
+                          setNewPlanTitle('');
+                          setAddingPlan(false);
+                        }}
+                      >
+                        <input
+                          value={newPlanTitle}
+                          onChange={(e) => setNewPlanTitle(e.target.value)}
+                          placeholder="Plan..."
+                          autoFocus
+                          onBlur={() => !newPlanTitle.trim() && setAddingPlan(false)}
+                          className={inlineCls}
+                        />
                       </form>
                     ) : (
-                      <button onClick={() => setAddingPlan(true)} className="text-xs text-gray-500 hover:text-matrix-accent transition-colors mt-0.5">+ plan</button>
+                      <button
+                        onClick={() => setAddingPlan(true)}
+                        className="text-xs text-gray-500 hover:text-matrix-accent transition-colors mt-0.5"
+                      >
+                        + plan
+                      </button>
                     )}
                   </div>
                 </div>
@@ -559,16 +898,59 @@ function StrategicSchemaActive() {
           );
         })}
         {addingObj ? (
-          <form className="space-y-1" onSubmit={e => { e.preventDefault(); if (!newObjTitle.trim()) return; createObjective.mutate({ missionId: mission.id, title: newObjTitle.trim(), description: newObjDesc.trim() || undefined }); setNewObjTitle(''); setNewObjDesc(''); setAddingObj(false); }}>
-            <input value={newObjTitle} onChange={e => setNewObjTitle(e.target.value)} placeholder="Objective..." autoFocus className={inlineCls} />
-            <textarea value={newObjDesc} onChange={e => setNewObjDesc(e.target.value)} placeholder="Description (optional)..." className="w-full text-sm bg-matrix-surface border border-matrix-border rounded px-2 py-1.5 text-gray-200 placeholder-matrix-muted/50 focus:outline-none focus:border-matrix-accent resize-none" rows={2} />
+          <form
+            className="space-y-1"
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (!newObjTitle.trim()) return;
+              createObjective.mutate({
+                missionId: mission.id,
+                title: newObjTitle.trim(),
+                description: newObjDesc.trim() || undefined,
+              });
+              setNewObjTitle('');
+              setNewObjDesc('');
+              setAddingObj(false);
+            }}
+          >
+            <input
+              value={newObjTitle}
+              onChange={(e) => setNewObjTitle(e.target.value)}
+              placeholder="Objective..."
+              autoFocus
+              className={inlineCls}
+            />
+            <textarea
+              value={newObjDesc}
+              onChange={(e) => setNewObjDesc(e.target.value)}
+              placeholder="Description (optional)..."
+              className="w-full text-sm bg-matrix-surface border border-matrix-border rounded px-2 py-1.5 text-gray-200 placeholder-matrix-muted/50 focus:outline-none focus:border-matrix-accent resize-none"
+              rows={2}
+            />
             <div className="flex gap-2">
-              <button type="submit" className="text-xs text-matrix-accent hover:text-matrix-accent-hover">Save</button>
-              <button type="button" onClick={() => { setNewObjTitle(''); setNewObjDesc(''); setAddingObj(false); }} className="text-xs text-matrix-muted hover:text-gray-200">Cancel</button>
+              <button type="submit" className="text-xs text-matrix-accent hover:text-matrix-accent-hover">
+                Save
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setNewObjTitle('');
+                  setNewObjDesc('');
+                  setAddingObj(false);
+                }}
+                className="text-xs text-matrix-muted hover:text-gray-200"
+              >
+                Cancel
+              </button>
             </div>
           </form>
         ) : (
-          <button onClick={() => setAddingObj(true)} className="text-xs text-gray-500 hover:text-matrix-accent transition-colors">+ objective</button>
+          <button
+            onClick={() => setAddingObj(true)}
+            className="text-xs text-gray-500 hover:text-matrix-accent transition-colors"
+          >
+            + objective
+          </button>
         )}
       </div>
     </div>
@@ -603,7 +985,11 @@ function StatsCard({ language }: { language: 'en' | 'es' }) {
   const { data: stats } = useStats();
   if (!stats) return null;
   const items = [
-    { label: t('tasks' as LangKey, language), value: `${stats.completedTasks}/${stats.totalTasks}`, sub: stats.totalTasks > 0 },
+    {
+      label: t('tasks' as LangKey, language),
+      value: `${stats.completedTasks}/${stats.totalTasks}`,
+      sub: stats.totalTasks > 0,
+    },
     { label: t('activePlans' as LangKey, language), value: String(stats.activePlans) },
     { label: t('pendingIdeas' as LangKey, language), value: String(stats.pendingIdeas) },
     { label: t('completionRate' as LangKey, language), value: `${stats.completionRate}%` },
@@ -611,7 +997,7 @@ function StatsCard({ language }: { language: 'en' | 'es' }) {
   return (
     <SectionCard title={t('globalStats' as LangKey, language)} icon="◪">
       <div className="grid grid-cols-2 gap-3">
-        {items.map(item => (
+        {items.map((item) => (
           <div key={item.label} className="text-center">
             <p className="text-lg font-semibold text-gray-200">{item.value}</p>
             <p className="text-[10px] text-matrix-muted">{item.label}</p>
@@ -630,17 +1016,25 @@ function StatsCard({ language }: { language: 'en' | 'es' }) {
 function ActiveProjectsCard({ language }: { language: 'en' | 'es' }) {
   const { data: allProjects } = useProjects();
   const { setActiveTab } = useUiStore();
-  const active = (allProjects || []).filter((p: any) => p.status === 'active').slice(0, 5);
+  const active = (allProjects || []).filter((p: Project) => p.status === 'active').slice(0, 5);
   return (
     <SectionCard title={t('activeProjects' as LangKey, language)} icon="◫">
       {active.length === 0 ? (
         <p className="text-xs text-matrix-muted py-4 text-center">{t('noProjects' as LangKey, language)}</p>
       ) : (
         <div className="space-y-2">
-          {active.map((p: any) => (
-            <button key={p.id} onClick={() => setActiveTab('projects')} className="w-full flex items-center gap-2 text-left hover:bg-white/[0.02] rounded px-1 py-1 transition-colors">
+          {active.map((p: Project) => (
+            <button
+              key={p.id}
+              onClick={() => setActiveTab('projects')}
+              className="w-full flex items-center gap-2 text-left hover:bg-white/[0.02] rounded px-1 py-1 transition-colors"
+            >
               <span className="text-sm text-gray-300 flex-1 truncate">{p.name}</span>
-              <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${p.status === 'active' ? 'bg-green-500/10 text-green-400' : 'bg-matrix-border/50 text-matrix-muted'}`}>{p.status.charAt(0).toUpperCase() + p.status.slice(1)}</span>
+              <span
+                className={`text-[10px] px-1.5 py-0.5 rounded-full ${p.status === 'active' ? 'bg-green-500/10 text-green-400' : 'bg-matrix-border/50 text-matrix-muted'}`}
+              >
+                {p.status.charAt(0).toUpperCase() + p.status.slice(1)}
+              </span>
               {p.scan && (
                 <div className="w-12">
                   <ProgressBar value={p.scan.progressPercent} />
@@ -662,7 +1056,7 @@ function RecentActivityCard({ language }: { language: 'en' | 'es' }) {
         <p className="text-xs text-matrix-muted py-4 text-center">{t('noActivity' as LangKey, language)}</p>
       ) : (
         <div className="space-y-1 max-h-48 overflow-y-auto pr-4">
-          {activity.map(a => (
+          {activity.map((a) => (
             <div key={a.id} className="flex items-start gap-2 py-1 text-xs">
               <span className="text-matrix-accent shrink-0 w-3 text-center">{activityIcons[a.action] || '•'}</span>
               <span className="text-gray-400 flex-1 truncate">{a.description}</span>
@@ -701,30 +1095,59 @@ function QuickCaptureCard({ language }: { language: 'en' | 'es' }) {
     setTimeout(() => setSaved(false), 2000);
   };
 
-  const inputCls = 'w-full bg-matrix-bg border border-matrix-border rounded px-2 py-1.5 text-sm text-gray-300 placeholder-gray-600 focus:outline-none focus:border-matrix-accent/60 transition-colors';
+  const inputCls =
+    'w-full bg-matrix-bg border border-matrix-border rounded px-2 py-1.5 text-sm text-gray-300 placeholder-gray-600 focus:outline-none focus:border-matrix-accent/60 transition-colors';
 
   return (
     <SectionCard title={t('quickCapture' as LangKey, language)} icon="✦">
       <div className="space-y-2">
         <div className="flex gap-1">
-          {(['idea', 'task'] as const).map(m => (
-            <button key={m} onClick={() => setMode(m)} className={`text-xs px-3 py-1 rounded transition-colors ${mode === m ? 'bg-matrix-accent/10 text-matrix-accent' : 'text-matrix-muted hover:text-gray-300'}`}>
+          {(['idea', 'task'] as const).map((m) => (
+            <button
+              key={m}
+              onClick={() => setMode(m)}
+              className={`text-xs px-3 py-1 rounded transition-colors ${mode === m ? 'bg-matrix-accent/10 text-matrix-accent' : 'text-matrix-muted hover:text-gray-300'}`}
+            >
               {t(m as LangKey, language)}
             </button>
           ))}
         </div>
         {mode === 'task' && plans && (
-          <select value={planId} onChange={e => setPlanId(e.target.value ? Number(e.target.value) : '')} className={inputCls}>
+          <select
+            value={planId}
+            onChange={(e) => setPlanId(e.target.value ? Number(e.target.value) : '')}
+            className={inputCls}
+          >
             <option value="">{t('selectPlan' as LangKey, language)}</option>
-            {plans.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}
+            {plans.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.title}
+              </option>
+            ))}
           </select>
         )}
-        <input value={title} onChange={e => setTitle(e.target.value)} placeholder={mode === 'idea' ? 'Idea title...' : t('taskTitle' as LangKey, language)} className={inputCls} onKeyDown={e => e.key === 'Enter' && handleSave()} />
+        <input
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder={mode === 'idea' ? 'Idea title...' : t('taskTitle' as LangKey, language)}
+          className={inputCls}
+          onKeyDown={(e) => e.key === 'Enter' && handleSave()}
+        />
         {mode === 'idea' && (
-          <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="Description (optional)..." rows={2} className={`${inputCls} resize-none`} />
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Description (optional)..."
+            rows={2}
+            className={`${inputCls} resize-none`}
+          />
         )}
         <div className="flex items-center gap-2">
-          <button onClick={handleSave} disabled={!title.trim() || (mode === 'task' && !planId)} className="text-xs px-3 py-1.5 bg-matrix-accent/10 text-matrix-accent rounded hover:bg-matrix-accent/20 transition-colors disabled:opacity-50">
+          <button
+            onClick={handleSave}
+            disabled={!title.trim() || (mode === 'task' && !planId)}
+            className="text-xs px-3 py-1.5 bg-matrix-accent/10 text-matrix-accent rounded hover:bg-matrix-accent/20 transition-colors disabled:opacity-50"
+          >
             {t('create' as LangKey, language)}
           </button>
           {saved && <span className="text-xs text-green-400">{t('saved' as LangKey, language)} ✓</span>}
@@ -744,10 +1167,12 @@ function ObjectivesGlanceCard({ language }: { language: 'en' | 'es' }) {
   return (
     <SectionCard title={language === 'es' ? 'Objetivos' : 'Objectives at a Glance'} icon="◎">
       {!objectives || objectives.length === 0 ? (
-        <p className="text-xs text-matrix-muted py-4 text-center">{language === 'es' ? 'Sin objetivos' : 'No objectives yet'}</p>
+        <p className="text-xs text-matrix-muted py-4 text-center">
+          {language === 'es' ? 'Sin objetivos' : 'No objectives yet'}
+        </p>
       ) : (
         <div className="space-y-2.5">
-          {objectives.map(obj => (
+          {objectives.map((obj) => (
             <div key={obj.id}>
               <div className="flex items-center justify-between mb-1">
                 <span className="text-xs text-gray-300 truncate flex-1">{obj.title}</span>
@@ -769,29 +1194,48 @@ function FocusQueueCard({ language }: { language: 'en' | 'es' }) {
   const updateTask = useUpdateTask();
 
   const statusIcon: Record<string, string> = { pending: '○', in_progress: '◐', done: '●' };
-  const statusColor: Record<string, string> = { pending: 'text-gray-500', in_progress: 'text-matrix-warning', done: 'text-matrix-success' };
+  const statusColor: Record<string, string> = {
+    pending: 'text-gray-500',
+    in_progress: 'text-matrix-warning',
+    done: 'text-matrix-success',
+  };
   const nextStatus: Record<string, string> = { pending: 'in_progress', in_progress: 'done', done: 'pending' };
   const prioOrder: Record<string, number> = { urgent: 0, high: 1, medium: 2, low: 3 };
-  const prioDot: Record<string, string> = { low: 'bg-gray-500', medium: 'bg-blue-400', high: 'bg-orange-400', urgent: 'bg-red-400' };
+  const prioDot: Record<string, string> = {
+    low: 'bg-gray-500',
+    medium: 'bg-blue-400',
+    high: 'bg-orange-400',
+    urgent: 'bg-red-400',
+  };
 
-  const focusTasks = [...(allTasks || [])]
-    .sort((a, b) => {
-      // done tasks go to the bottom
-      if (a.status === 'done' && b.status !== 'done') return 1;
-      if (a.status !== 'done' && b.status === 'done') return -1;
-      return (prioOrder[a.priority] ?? 9) - (prioOrder[b.priority] ?? 9);
-    });
+  const focusTasks = [...(allTasks || [])].sort((a, b) => {
+    // done tasks go to the bottom
+    if (a.status === 'done' && b.status !== 'done') return 1;
+    if (a.status !== 'done' && b.status === 'done') return -1;
+    return (prioOrder[a.priority] ?? 9) - (prioOrder[b.priority] ?? 9);
+  });
 
   return (
     <SectionCard title={language === 'es' ? 'Cola de enfoque' : 'Focus Queue'} icon="▸">
       {focusTasks.length === 0 ? (
-        <p className="text-xs text-matrix-muted py-4 text-center">{language === 'es' ? 'Sin tareas pendientes' : 'All clear!'}</p>
+        <p className="text-xs text-matrix-muted py-4 text-center">
+          {language === 'es' ? 'Sin tareas pendientes' : 'All clear!'}
+        </p>
       ) : (
         <div className="space-y-1 max-h-64 overflow-y-auto pr-4">
-          {focusTasks.map(task => (
+          {focusTasks.map((task) => (
             <div key={task.id} className="flex items-center gap-2 py-1 group">
-              <button onClick={() => updateTask.mutate({ id: task.id, status: nextStatus[task.status] })} className={`text-xs ${statusColor[task.status]}`}>{statusIcon[task.status]}</button>
-              <span className={`text-sm flex-1 truncate ${task.status === 'done' ? 'line-through text-gray-600' : 'text-gray-300'}`}>{task.title}</span>
+              <button
+                onClick={() => updateTask.mutate({ id: task.id, status: nextStatus[task.status] })}
+                className={`text-xs ${statusColor[task.status]}`}
+              >
+                {statusIcon[task.status]}
+              </button>
+              <span
+                className={`text-sm flex-1 truncate ${task.status === 'done' ? 'line-through text-gray-600' : 'text-gray-300'}`}
+              >
+                {task.title}
+              </span>
               <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${prioDot[task.priority]}`} />
             </div>
           ))}
@@ -807,7 +1251,7 @@ function UpcomingDeadlinesCard({ language }: { language: 'en' | 'es' }) {
   const { data: allTasks } = useTasks();
 
   const tasksWithDeadline = [...(allTasks || [])]
-    .filter(t => t.deadline && t.status !== 'done')
+    .filter((t) => t.deadline && t.status !== 'done')
     .sort((a, b) => (a.deadline || '').localeCompare(b.deadline || ''))
     .slice(0, 5);
 
@@ -815,7 +1259,8 @@ function UpcomingDeadlinesCard({ language }: { language: 'en' | 'es' }) {
     const diff = Math.ceil((new Date(d).getTime() - Date.now()) / 86400000);
     return diff;
   };
-  const daysColor = (d: number) => d <= 1 ? 'text-red-400' : d <= 3 ? 'text-orange-400' : d <= 7 ? 'text-amber-400' : 'text-gray-500';
+  const daysColor = (d: number) =>
+    d <= 1 ? 'text-red-400' : d <= 3 ? 'text-orange-400' : d <= 7 ? 'text-amber-400' : 'text-gray-500';
 
   // If no real deadlines, show mock data
   const mockDeadlines = [
@@ -827,8 +1272,8 @@ function UpcomingDeadlinesCard({ language }: { language: 'en' | 'es' }) {
 
   const hasReal = tasksWithDeadline.length > 0;
   const items = hasReal
-    ? tasksWithDeadline.map(t => ({ title: t.title, dLeft: daysLeft(t.deadline!) }))
-    : mockDeadlines.map(m => ({ title: m.title, dLeft: m.dLeft }));
+    ? tasksWithDeadline.map((t) => ({ title: t.title, dLeft: daysLeft(t.deadline!) }))
+    : mockDeadlines.map((m) => ({ title: m.title, dLeft: m.dLeft }));
 
   return (
     <SectionCard title={language === 'es' ? 'Próximos vencimientos' : 'Upcoming Deadlines'} icon="⏰">
@@ -896,20 +1341,29 @@ function WeeklyHeatmapCard({ language }: { language: 'en' | 'es' }) {
         {displayGrid.map((week, wi) => (
           <div key={wi} className="flex gap-1">
             {week.map((val, di) => (
-              <div key={di} className={`flex-1 h-4 rounded-sm ${cellColor(val)} transition-colors`} title={`${val} actions`} />
+              <div
+                key={di}
+                className={`flex-1 h-4 rounded-sm ${cellColor(val)} transition-colors`}
+                title={`${val} actions`}
+              />
             ))}
           </div>
         ))}
         <div className="flex gap-1 mt-0.5">
           {dayLabels.map((d, i) => (
-            <span key={i} className="flex-1 text-center text-[9px] text-matrix-muted">{d}</span>
+            <span key={i} className="flex-1 text-center text-[9px] text-matrix-muted">
+              {d}
+            </span>
           ))}
         </div>
       </div>
       <div className="flex items-center gap-1.5 mt-2 justify-end">
         <span className="text-[9px] text-matrix-muted">{language === 'es' ? 'Menos' : 'Less'}</span>
         {[0, 0.25, 0.5, 0.8].map((v, i) => (
-          <div key={i} className={`w-3 h-3 rounded-sm ${v === 0 ? 'bg-matrix-border/30' : v <= 0.33 ? 'bg-matrix-accent/20' : v <= 0.66 ? 'bg-matrix-accent/50' : 'bg-matrix-accent/80'}`} />
+          <div
+            key={i}
+            className={`w-3 h-3 rounded-sm ${v === 0 ? 'bg-matrix-border/30' : v <= 0.33 ? 'bg-matrix-accent/20' : v <= 0.66 ? 'bg-matrix-accent/50' : 'bg-matrix-accent/80'}`}
+          />
         ))}
         <span className="text-[9px] text-matrix-muted">{language === 'es' ? 'Más' : 'More'}</span>
       </div>
@@ -930,9 +1384,13 @@ function TaskDistributionCard({ language }: { language: 'en' | 'es' }) {
 
   const bars = [
     { key: 'done', label: language === 'es' ? 'Hecho' : 'Done', color: 'bg-green-500', count: counts.done },
-    { key: 'in_progress', label: language === 'es' ? 'En progreso' : 'In Progress', color: 'bg-amber-500', count: counts.in_progress },
+    {
+      key: 'in_progress',
+      label: language === 'es' ? 'En progreso' : 'In Progress',
+      color: 'bg-amber-500',
+      count: counts.in_progress,
+    },
     { key: 'pending', label: language === 'es' ? 'Pendiente' : 'Pending', color: 'bg-gray-500', count: counts.pending },
-
   ];
 
   return (
@@ -943,13 +1401,15 @@ function TaskDistributionCard({ language }: { language: 'en' | 'es' }) {
         <div className="space-y-2">
           {/* Stacked bar */}
           <div className="flex h-3 rounded-full overflow-hidden">
-            {bars.filter(b => b.count > 0).map(b => (
-              <div key={b.key} className={`${b.color}/70`} style={{ width: `${(b.count / total) * 100}%` }} />
-            ))}
+            {bars
+              .filter((b) => b.count > 0)
+              .map((b) => (
+                <div key={b.key} className={`${b.color}/70`} style={{ width: `${(b.count / total) * 100}%` }} />
+              ))}
           </div>
           {/* Legend */}
           <div className="grid grid-cols-2 gap-x-4 gap-y-1">
-            {bars.map(b => (
+            {bars.map((b) => (
               <div key={b.key} className="flex items-center gap-1.5 text-xs">
                 <span className={`w-2 h-2 rounded-full ${b.color}/70`} />
                 <span className="text-gray-400 flex-1">{b.label}</span>
@@ -967,24 +1427,34 @@ function TaskDistributionCard({ language }: { language: 'en' | 'es' }) {
 
 function ScratchpadCard({ language }: { language: 'en' | 'es' }) {
   const [notes, setNotes] = useState(() => {
-    try { return localStorage.getItem('matrix-scratchpad') || ''; } catch { return ''; }
+    try {
+      return localStorage.getItem('matrix-scratchpad') || '';
+    } catch {
+      return '';
+    }
   });
 
   const handleChange = (val: string) => {
     setNotes(val);
-    try { localStorage.setItem('matrix-scratchpad', val); } catch { /* ignore */ }
+    try {
+      localStorage.setItem('matrix-scratchpad', val);
+    } catch {
+      /* ignore */
+    }
   };
 
   return (
     <SectionCard title={language === 'es' ? 'Bloc de notas' : 'Scratchpad'} icon="✏">
       <textarea
         value={notes}
-        onChange={e => handleChange(e.target.value)}
+        onChange={(e) => handleChange(e.target.value)}
         placeholder={language === 'es' ? 'Escribe notas rápidas aquí...' : 'Quick notes, reminders, ideas...'}
         rows={5}
         className="w-full bg-matrix-bg border border-matrix-border rounded px-2 py-1.5 text-sm text-gray-300 placeholder-gray-600 focus:outline-none focus:border-matrix-accent/60 transition-colors resize-none"
       />
-      <p className="text-[10px] text-gray-500 mt-1 text-right">{language === 'es' ? 'Guardado localmente' : 'Saved locally'}</p>
+      <p className="text-[10px] text-gray-500 mt-1 text-right">
+        {language === 'es' ? 'Guardado localmente' : 'Saved locally'}
+      </p>
     </SectionCard>
   );
 }
@@ -1011,12 +1481,19 @@ const IDEA_COLORS: Record<string, string> = {
   promoted: '#a855f7',
 };
 
-const ChartTooltip = ({ active, payload }: any) => {
+interface ChartTooltipProps {
+  active?: boolean;
+  payload?: Array<{ payload: { name: string; value?: number; progress?: number } }>;
+}
+
+const ChartTooltip = ({ active, payload }: ChartTooltipProps) => {
   if (!active || !payload?.length) return null;
   const d = payload[0].payload;
   return (
     <div className="bg-matrix-surface border border-matrix-border rounded px-2 py-1 text-xs">
-      <p className="text-gray-300">{d.name}: {d.value ?? d.progress}%</p>
+      <p className="text-gray-300">
+        {d.name}: {d.value ?? d.progress}%
+      </p>
     </div>
   );
 };
@@ -1026,15 +1503,17 @@ function ObjectivesChartCard({ language }: { language: 'en' | 'es' }) {
   const mission = missions?.[0];
   const { data: objectives } = useObjectives(mission?.id);
 
-  const objData = (objectives || []).map(o => ({
+  const objData = (objectives || []).map((o: Objective) => ({
     name: o.title.length > 25 ? o.title.slice(0, 25) + '…' : o.title,
-    progress: (o as any).progress ?? 0,
+    progress: o.progress ?? 0,
   }));
 
   return (
     <SectionCard title={t('objectivesProgress' as LangKey, language)} icon="◪">
       {objData.length === 0 ? (
-        <p className="text-xs text-matrix-muted py-4 text-center">{language === 'es' ? 'Sin objetivos' : 'No objectives yet'}</p>
+        <p className="text-xs text-matrix-muted py-4 text-center">
+          {language === 'es' ? 'Sin objetivos' : 'No objectives yet'}
+        </p>
       ) : (
         <ResponsiveContainer width="100%" height={objData.length * 50 + 20}>
           <BarChart data={objData} layout="vertical" margin={{ left: 10, right: 20, top: 5, bottom: 5 }}>
@@ -1059,7 +1538,9 @@ function TaskPieCard({ language }: { language: 'en' | 'es' }) {
   for (const task of allTasks || []) {
     taskCounts[task.status] = (taskCounts[task.status] || 0) + 1;
   }
-  const taskData = Object.entries(taskCounts).filter(([, v]) => v > 0).map(([status, value]) => ({ name: status, value }));
+  const taskData = Object.entries(taskCounts)
+    .filter(([, v]) => v > 0)
+    .map(([status, value]) => ({ name: status, value }));
 
   return (
     <SectionCard title={t('taskDistribution' as LangKey, language)} icon="◔">
@@ -1069,7 +1550,16 @@ function TaskPieCard({ language }: { language: 'en' | 'es' }) {
         <div>
           <ResponsiveContainer width="100%" height={180}>
             <PieChart>
-              <Pie data={taskData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={35} outerRadius={60} paddingAngle={2}>
+              <Pie
+                data={taskData}
+                dataKey="value"
+                nameKey="name"
+                cx="50%"
+                cy="50%"
+                innerRadius={35}
+                outerRadius={60}
+                paddingAngle={2}
+              >
                 {taskData.map((entry, i) => (
                   <Cell key={i} fill={TASK_COLORS[entry.name] || '#6b7280'} />
                 ))}
@@ -1078,10 +1568,12 @@ function TaskPieCard({ language }: { language: 'en' | 'es' }) {
             </PieChart>
           </ResponsiveContainer>
           <div className="flex flex-wrap gap-3 justify-center mt-1">
-            {taskData.map(d => (
+            {taskData.map((d) => (
               <div key={d.name} className="flex items-center gap-1.5 text-xs">
                 <span className="w-2 h-2 rounded-full" style={{ backgroundColor: TASK_COLORS[d.name] }} />
-                <span className="text-matrix-muted">{d.name} ({d.value})</span>
+                <span className="text-matrix-muted">
+                  {d.name} ({d.value})
+                </span>
               </div>
             ))}
           </div>
@@ -1097,7 +1589,9 @@ function IdeasPieCard({ language }: { language: 'en' | 'es' }) {
   for (const idea of allIdeas || []) {
     ideaCounts[idea.status] = (ideaCounts[idea.status] || 0) + 1;
   }
-  const ideaData = Object.entries(ideaCounts).filter(([, v]) => v > 0).map(([status, value]) => ({ name: status, value }));
+  const ideaData = Object.entries(ideaCounts)
+    .filter(([, v]) => v > 0)
+    .map(([status, value]) => ({ name: status, value }));
 
   return (
     <SectionCard title={t('ideasPipeline' as LangKey, language)} icon="✦">
@@ -1107,7 +1601,16 @@ function IdeasPieCard({ language }: { language: 'en' | 'es' }) {
         <div>
           <ResponsiveContainer width="100%" height={180}>
             <PieChart>
-              <Pie data={ideaData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={35} outerRadius={60} paddingAngle={2}>
+              <Pie
+                data={ideaData}
+                dataKey="value"
+                nameKey="name"
+                cx="50%"
+                cy="50%"
+                innerRadius={35}
+                outerRadius={60}
+                paddingAngle={2}
+              >
                 {ideaData.map((entry, i) => (
                   <Cell key={i} fill={IDEA_COLORS[entry.name] || '#6b7280'} />
                 ))}
@@ -1116,10 +1619,12 @@ function IdeasPieCard({ language }: { language: 'en' | 'es' }) {
             </PieChart>
           </ResponsiveContainer>
           <div className="flex flex-wrap gap-3 justify-center mt-1">
-            {ideaData.map(d => (
+            {ideaData.map((d) => (
               <div key={d.name} className="flex items-center gap-1.5 text-xs">
                 <span className="w-2 h-2 rounded-full" style={{ backgroundColor: IDEA_COLORS[d.name] }} />
-                <span className="text-matrix-muted">{d.name} ({d.value})</span>
+                <span className="text-matrix-muted">
+                  {d.name} ({d.value})
+                </span>
               </div>
             ))}
           </div>

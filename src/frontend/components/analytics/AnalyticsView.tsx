@@ -1,8 +1,5 @@
 import React from 'react';
-import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
-  PieChart, Pie,
-} from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
 import { useObjectives } from '../../hooks/useObjectives';
 import { useTasks } from '../../hooks/useTasks';
 import { useIdeas } from '../../hooks/useIdeas';
@@ -14,6 +11,11 @@ function barColor(value: number): string {
   if (value <= 33) return '#ef4444';
   if (value <= 66) return '#f59e0b';
   return '#22c55e';
+}
+
+interface TooltipProps {
+  active?: boolean;
+  payload?: Array<{ payload: { name: string; value?: number; progress?: number } }>;
 }
 
 const TASK_COLORS: Record<string, string> = {
@@ -30,12 +32,14 @@ const IDEA_COLORS: Record<string, string> = {
   promoted: '#a855f7',
 };
 
-const CustomTooltip = ({ active, payload }: any) => {
+const CustomTooltip = ({ active, payload }: TooltipProps) => {
   if (!active || !payload?.length) return null;
   const d = payload[0].payload;
   return (
     <div className="bg-matrix-surface border border-matrix-border rounded px-2 py-1 text-xs">
-      <p className="text-gray-300">{d.name}: {d.value ?? d.progress}%</p>
+      <p className="text-gray-300">
+        {d.name}: {d.value ?? d.progress}%
+      </p>
     </div>
   );
 };
@@ -49,9 +53,9 @@ export function AnalyticsView() {
   const { data: allIdeas } = useIdeas();
 
   // Objectives progress data
-  const objData = (objectives || []).map(o => ({
+  const objData = (objectives || []).map((o) => ({
     name: o.title.length > 25 ? o.title.slice(0, 25) + '…' : o.title,
-    progress: (o as any).progress ?? 0,
+    progress: o.progress ?? 0,
   }));
 
   // Task distribution
@@ -108,7 +112,16 @@ export function AnalyticsView() {
             <div>
               <ResponsiveContainer width="100%" height={200}>
                 <PieChart>
-                  <Pie data={taskData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={40} outerRadius={70} paddingAngle={2}>
+                  <Pie
+                    data={taskData}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={40}
+                    outerRadius={70}
+                    paddingAngle={2}
+                  >
                     {taskData.map((entry, i) => (
                       <Cell key={i} fill={TASK_COLORS[entry.name] || '#6b7280'} />
                     ))}
@@ -117,10 +130,12 @@ export function AnalyticsView() {
                 </PieChart>
               </ResponsiveContainer>
               <div className="flex flex-wrap gap-3 justify-center mt-2">
-                {taskData.map(d => (
+                {taskData.map((d) => (
                   <div key={d.name} className="flex items-center gap-1.5 text-xs">
                     <span className="w-2 h-2 rounded-full" style={{ backgroundColor: TASK_COLORS[d.name] }} />
-                    <span className="text-matrix-muted">{d.name} ({d.value})</span>
+                    <span className="text-matrix-muted">
+                      {d.name} ({d.value})
+                    </span>
                   </div>
                 ))}
               </div>
@@ -137,7 +152,16 @@ export function AnalyticsView() {
             <div>
               <ResponsiveContainer width="100%" height={200}>
                 <PieChart>
-                  <Pie data={ideaData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={40} outerRadius={70} paddingAngle={2}>
+                  <Pie
+                    data={ideaData}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={40}
+                    outerRadius={70}
+                    paddingAngle={2}
+                  >
                     {ideaData.map((entry, i) => (
                       <Cell key={i} fill={IDEA_COLORS[entry.name] || '#6b7280'} />
                     ))}
@@ -146,10 +170,12 @@ export function AnalyticsView() {
                 </PieChart>
               </ResponsiveContainer>
               <div className="flex flex-wrap gap-3 justify-center mt-2">
-                {ideaData.map(d => (
+                {ideaData.map((d) => (
                   <div key={d.name} className="flex items-center gap-1.5 text-xs">
                     <span className="w-2 h-2 rounded-full" style={{ backgroundColor: IDEA_COLORS[d.name] }} />
-                    <span className="text-matrix-muted">{d.name} ({d.value})</span>
+                    <span className="text-matrix-muted">
+                      {d.name} ({d.value})
+                    </span>
                   </div>
                 ))}
               </div>

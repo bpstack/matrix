@@ -2,10 +2,11 @@ import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { app } from 'electron';
 import path from 'path';
 import fs from 'fs';
+import Database from 'better-sqlite3';
 import * as schema from './schema';
 
 let db: ReturnType<typeof drizzle<typeof schema>> | undefined;
-let sqliteDb: any;
+let sqliteDb: Database.Database | undefined;
 
 export function initDb() {
   if (db) return db;
@@ -21,12 +22,13 @@ export function initDb() {
     : require('better-sqlite3');
 
   const dbPath = path.join(dataDir, 'matrix.db');
-  sqliteDb = new Database(dbPath);
+  const database = new Database(dbPath);
+  sqliteDb = database;
 
-  sqliteDb.pragma('journal_mode = WAL');
-  sqliteDb.pragma('foreign_keys = ON');
+  database.pragma('journal_mode = WAL');
+  database.pragma('foreign_keys = ON');
 
-  db = drizzle(sqliteDb, { schema });
+  db = drizzle(database, { schema });
   return db;
 }
 
