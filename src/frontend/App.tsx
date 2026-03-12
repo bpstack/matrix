@@ -37,17 +37,33 @@ queryClient.getQueryCache().subscribe((event) => {
   }
 });
 
+// Read cached theme before React renders to prevent flash
+const cachedTheme = localStorage.getItem('matrix-theme');
+if (cachedTheme === 'light' || cachedTheme === 'dark') {
+  document.documentElement.classList.remove('dark', 'light');
+  document.documentElement.classList.add(cachedTheme);
+}
+
 function ThemeProvider({ children }: { children: React.ReactNode }) {
   const { theme, setTheme } = useUiStore();
+
+  // Sync Zustand with cached theme on mount
+  useEffect(() => {
+    const cached = localStorage.getItem('matrix-theme');
+    if (cached === 'light' || cached === 'dark') {
+      setTheme(cached as Theme);
+    }
+  }, [setTheme]);
 
   // Apply theme class to root element
   useEffect(() => {
     const root = document.documentElement;
     root.classList.remove('dark', 'light');
     root.classList.add(theme);
+    localStorage.setItem('matrix-theme', theme);
   }, [theme]);
 
-  // Load saved theme from DB on startup
+  // Load saved theme from DB on startup and apply if different
   useEffect(() => {
     apiFetch<Record<string, string>>('/settings')
       .then((settings) => {

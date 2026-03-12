@@ -2,6 +2,20 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Smooth theme transitions ── */
+* {
+  transition:
+    background-color 200ms ease-in-out,
+    border-color 200ms ease-in-out,
+    color 200ms ease-in-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none;
+  }
+}
+
 /* ── Dark theme (default) ── */
 /* Values are R G B channels so Tailwind can apply /opacity modifiers */
 :root {
