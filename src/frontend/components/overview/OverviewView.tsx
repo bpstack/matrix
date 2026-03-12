@@ -640,7 +640,7 @@ function ActiveProjectsCard({ language }: { language: 'en' | 'es' }) {
           {active.map((p: any) => (
             <button key={p.id} onClick={() => setActiveTab('projects')} className="w-full flex items-center gap-2 text-left hover:bg-white/[0.02] rounded px-1 py-1 transition-colors">
               <span className="text-sm text-gray-300 flex-1 truncate">{p.name}</span>
-              <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${p.status === 'active' ? 'bg-green-500/10 text-green-400' : 'bg-matrix-border/50 text-matrix-muted'}`}>{p.status}</span>
+              <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${p.status === 'active' ? 'bg-green-500/10 text-green-400' : 'bg-matrix-border/50 text-matrix-muted'}`}>{p.status.charAt(0).toUpperCase() + p.status.slice(1)}</span>
               {p.scan && (
                 <div className="w-12">
                   <ProgressBar value={p.scan.progressPercent} />
@@ -859,11 +859,14 @@ function WeeklyHeatmapCard({ language }: { language: 'en' | 'es' }) {
   const grid: number[][] = Array.from({ length: weeks }, () => Array(7).fill(0));
 
   for (const a of activity || []) {
-    const diff = Math.floor((now - new Date(a.createdAt).getTime()) / 86400000);
+    const actDate = new Date(a.createdAt);
+    const diff = Math.floor((now - actDate.getTime()) / 86400000);
     if (diff >= 0 && diff < weeks * 7) {
       const weekIdx = Math.floor(diff / 7);
-      const dayIdx = 6 - (diff % 7); // reverse so recent is right
-      if (weekIdx < weeks && dayIdx >= 0) grid[weeks - 1 - weekIdx][dayIdx]++;
+      const dayIdx = actDate.getDay(); // 0 = Sunday, 1 = Monday, etc.
+      // Convert to Monday-based (L=0, M=1, X=2, J=3, V=4, S=5, D=6)
+      const mondayIdx = dayIdx === 0 ? 6 : dayIdx - 1;
+      if (weekIdx < weeks && mondayIdx >= 0) grid[weeks - 1 - weekIdx][mondayIdx]++;
     }
   }
 
