@@ -113,6 +113,13 @@ const dict = {
     catGaming: 'Gaming',
     catWork: 'Work',
     catOther: 'Other',
+    changeMasterPassword: 'Change Master Password',
+    currentPassword: 'Current Password',
+    newPasswordAgain: 'Confirm New Password',
+    passwordChanged: 'Password changed successfully',
+    incorrectCurrentPassword: 'Current password is incorrect',
+    passwordTooShort: 'New password must be at least 8 characters',
+    passwordsDoNotMatch: 'Passwords do not match',
   },
   es: {
     overview: 'Resumen',
@@ -228,6 +235,13 @@ const dict = {
     catGaming: 'Gaming',
     catWork: 'Trabajo',
     catOther: 'Otros',
+    changeMasterPassword: 'Cambiar contraseña maestra',
+    currentPassword: 'Contraseña actual',
+    newPasswordAgain: 'Confirmar nueva contraseña',
+    passwordChanged: 'Contraseña cambiada exitosamente',
+    incorrectCurrentPassword: 'La contraseña actual es incorrecta',
+    passwordTooShort: 'La nueva contraseña debe tener al menos 8 caracteres',
+    passwordsDoNotMatch: 'Las contraseñas no coinciden',
   },
 } as const;
 
