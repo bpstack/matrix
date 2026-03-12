@@ -4,6 +4,7 @@ import { usePlans } from '../../hooks/usePlans';
 import { useUiStore } from '../../stores/ui.store';
 import { t, LangKey } from '../../lib/i18n';
 import { TaskBoard } from './TaskBoard';
+import { Calendar } from '../ui/Calendar';
 
 const statusIcons: Record<string, string> = { pending: '○', in_progress: '◐', done: '●' };
 const statusColors: Record<string, string> = { pending: 'text-gray-500', in_progress: 'text-matrix-warning', done: 'text-matrix-success' };
@@ -150,7 +151,9 @@ export function TasksView() {
             </div>
             <div className="flex gap-2">
               <input value={newTaskDescription} onChange={e => setNewTaskDescription(e.target.value)} placeholder={t('taskDescription', language)} className="flex-1 bg-matrix-bg border border-matrix-border rounded px-2 py-1 text-sm text-gray-300 placeholder-gray-600 focus:outline-none focus:border-matrix-accent/60" />
-              <input type="date" value={newDeadline} onChange={e => setNewDeadline(e.target.value)} className="bg-matrix-bg border border-matrix-border rounded px-2 py-1 text-xs text-gray-300 focus:outline-none focus:border-matrix-accent/60" />
+              <div className="w-36">
+                <Calendar value={newDeadline} onChange={setNewDeadline} />
+              </div>
             </div>
           </form>
         ) : (
@@ -162,13 +165,16 @@ export function TasksView() {
 
       {tasks?.length === 0 && <p className="text-sm text-matrix-muted">{t('noTasks', language)}</p>}
       {[...grouped.entries()].map(([planId, planTasks]) => (
-        <div key={planId} className="mb-4">
-          <p className="text-xs text-matrix-muted mb-1.5 pb-1 border-b border-matrix-border/40">{planNameMap.get(planId) || `Plan #${planId}`}</p>
-          <div className="space-y-px">
+        <div key={planId} className="mb-6">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-sm font-semibold px-3 py-1.5 rounded-md border bg-matrix-accent/10 text-matrix-accent border-matrix-accent/30">{planNameMap.get(planId) || `Plan #${planId}`}</span>
+            <span className="text-xs text-matrix-muted">{planTasks?.length || 0} {t('tasks', language)}</span>
+          </div>
+          <div className="grid gap-2">
             {planTasks!.map(task => (
               <div 
                 key={task.id} 
-                className={`flex flex-col gap-0.5 py-1 px-2 rounded group ${editingTaskId === task.id ? 'bg-white/[0.03] ring-1 ring-matrix-border/60' : `cursor-move ${draggedId === task.id ? 'opacity-30' : 'hover:bg-white/[0.02]'} ${dropTarget === task.id && draggedId !== task.id ? 'ring-1 ring-matrix-accent/50 bg-matrix-accent/5' : ''}`}`}
+                className={`group flex flex-col gap-1 py-2.5 px-3 rounded-lg border transition-all ${editingTaskId === task.id ? 'bg-matrix-surface ring-1 ring-matrix-accent/60 border-matrix-accent/30' : `cursor-move bg-matrix-surface/60 border-matrix-border/50 hover:bg-matrix-surface hover:border-matrix-border ${draggedId === task.id ? 'opacity-30' : ''} ${dropTarget === task.id && draggedId !== task.id ? 'ring-2 ring-matrix-accent/50 bg-matrix-accent/10 border-matrix-accent/30' : ''}`}`}
                 draggable={editingTaskId !== task.id}
                 onDragStart={(e) => editingTaskId === null && handleDragStart(e, task.id)}
                 onDragOver={(e) => editingTaskId === null && handleDragOver(e, task.id)}
@@ -193,12 +199,9 @@ export function TasksView() {
                       className="w-full bg-matrix-bg border border-matrix-border rounded px-2 py-1 text-xs text-gray-300 placeholder-gray-600 focus:outline-none focus:border-matrix-accent/40 resize-y min-h-[3rem]"
                     />
                     <div className="flex items-center gap-2">
-                      <input
-                        type="date"
-                        value={editDeadline}
-                        onChange={e => setEditDeadline(e.target.value)}
-                        className="bg-matrix-bg border border-matrix-border rounded px-2 py-0.5 text-xs text-gray-300 focus:outline-none focus:border-matrix-accent/40"
-                      />
+                      <div className="w-36">
+                        <Calendar value={editDeadline} onChange={setEditDeadline} />
+                      </div>
                       <button onClick={() => saveEdit(task.id)} className="text-xs px-2.5 py-0.5 bg-matrix-accent/10 text-matrix-accent rounded hover:bg-matrix-accent/20 transition-colors">Save</button>
                       <button onClick={cancelEdit} className="text-xs text-matrix-muted hover:text-gray-200 transition-colors">Cancel</button>
                     </div>
@@ -206,12 +209,12 @@ export function TasksView() {
                 ) : (
                   <>
                     <div className="flex items-center gap-2">
-                      <span className="text-gray-600">⋮⋮</span>
+                      <span className="cursor-move text-gray-600 hover:text-gray-400">⋮⋮</span>
                       <button onClick={() => updateTask.mutate({ id: task.id, status: nextStatus[task.status] })} className={`text-sm ${statusColors[task.status]}`} title={task.status}>{statusIcons[task.status]}</button>
                       <span className={`flex-1 text-sm ${task.status === 'done' ? 'line-through text-gray-600' : 'text-gray-300'}`}>{task.title}</span>
                       <select value={task.priority} onChange={e => updateTask.mutate({ id: task.id, priority: e.target.value })} className="bg-matrix-bg border border-matrix-border rounded px-1.5 py-0.5 text-[10px] text-matrix-muted focus:outline-none cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity"><option value="low">{t('low', language)}</option><option value="medium">{t('medium', language)}</option><option value="high">{t('high', language)}</option><option value="urgent">{t('urgent', language)}</option></select>
                       <span className={`text-[10px] ${priorityColors[task.priority]} group-hover:hidden`}>{t(task.priority as any, language)}</span>
-                      {task.deadline && <span className="text-xs text-matrix-muted">{task.deadline}</span>}
+                      {task.deadline && <span className="text-xs text-matrix-muted">{new Date(task.deadline + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>}
                       <span className="inline-flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button onClick={() => startEdit(task)} className="text-[10px] text-gray-500 hover:text-matrix-accent transition-colors" title="Edit">✎</button>
                         <button onClick={() => deleteTask.mutate(task.id)} className="text-[10px] text-gray-500 hover:text-matrix-danger transition-colors" title="Delete">✕</button>
