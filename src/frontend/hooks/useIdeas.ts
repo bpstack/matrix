@@ -48,18 +48,37 @@ export function useIdea(id: number | null) {
 export function useCreateIdea() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: { title: string; description?: string; targetType?: string; targetId?: number; projectId?: number }) =>
-      apiFetch('/ideas', { method: 'POST', body: JSON.stringify(data) }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['ideas'] }); },
+    mutationFn: (data: {
+      title: string;
+      description?: string;
+      targetType?: string;
+      targetId?: number;
+      projectId?: number;
+    }) => apiFetch('/ideas', { method: 'POST', body: JSON.stringify(data) }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['ideas'] });
+    },
   });
 }
 
 export function useUpdateIdea() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, ...data }: { id: number; title?: string; description?: string; status?: string; targetType?: string | null; targetId?: number | null; projectId?: number | null }) =>
-      apiFetch(`/ideas/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['ideas'] }); },
+    mutationFn: ({
+      id,
+      ...data
+    }: {
+      id: number;
+      title?: string;
+      description?: string;
+      status?: string;
+      targetType?: string | null;
+      targetId?: number | null;
+      projectId?: number | null;
+    }) => apiFetch(`/ideas/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['ideas'] });
+    },
   });
 }
 
@@ -67,16 +86,30 @@ export function useDeleteIdea() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: number) => apiFetch(`/ideas/${id}`, { method: 'DELETE' }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['ideas'] }); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['ideas'] });
+    },
   });
 }
 
 export function useEvaluateIdea() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, ...data }: { id: number; alignmentScore: number; impactScore: number; costScore: number; riskScore: number; reasoning?: string }) =>
-      apiFetch(`/ideas/${id}/evaluate`, { method: 'POST', body: JSON.stringify(data) }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['ideas'] }); qc.invalidateQueries({ queryKey: ['evaluation'] }); },
+    mutationFn: ({
+      id,
+      ...data
+    }: {
+      id: number;
+      alignmentScore: number;
+      impactScore: number;
+      costScore: number;
+      riskScore: number;
+      reasoning?: string;
+    }) => apiFetch(`/ideas/${id}/evaluate`, { method: 'POST', body: JSON.stringify(data) }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['ideas'] });
+      qc.invalidateQueries({ queryKey: ['evaluation'] });
+    },
   });
 }
 
@@ -94,7 +127,10 @@ export function useDecideIdea() {
   return useMutation({
     mutationFn: ({ id, decision }: { id: number; decision: 'approved' | 'rejected' }) =>
       apiFetch(`/ideas/${id}/decide`, { method: 'PATCH', body: JSON.stringify({ decision }) }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['ideas'] }); qc.invalidateQueries({ queryKey: ['evaluation'] }); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['ideas'] });
+      qc.invalidateQueries({ queryKey: ['evaluation'] });
+    },
   });
 }
 

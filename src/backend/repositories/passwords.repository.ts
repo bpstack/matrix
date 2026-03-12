@@ -27,7 +27,7 @@ export const passwordsRepo = {
   },
 
   search(query: string, category?: string) {
-    const escaped = query.replace(/[%_\\]/g, c => `\\${c}`);
+    const escaped = query.replace(/[%_\\]/g, (c) => `\\${c}`);
     const searchPattern = `%${escaped}%`;
     if (category && category !== 'all') {
       return getDb()
@@ -38,10 +38,10 @@ export const passwordsRepo = {
             or(
               like(passwords.label, searchPattern),
               like(passwords.domain, searchPattern),
-              like(passwords.username, searchPattern)
+              like(passwords.username, searchPattern),
             ),
-            eq(passwords.category, category)
-          )
+            eq(passwords.category, category),
+          ),
         )
         .all();
     }
@@ -52,8 +52,8 @@ export const passwordsRepo = {
         or(
           like(passwords.label, searchPattern),
           like(passwords.domain, searchPattern),
-          like(passwords.username, searchPattern)
-        )
+          like(passwords.username, searchPattern),
+        ),
       )
       .all();
   },
@@ -62,12 +62,7 @@ export const passwordsRepo = {
     return getDb()
       .select()
       .from(passwords)
-      .where(
-        and(
-          eq(passwords.domain, domain),
-          eq(passwords.username, username)
-        )
-      )
+      .where(and(eq(passwords.domain, domain), eq(passwords.username, username)))
       .get();
   },
 
@@ -99,12 +94,7 @@ export const passwordsRepo = {
     if (data.favorite !== undefined) updateData.favorite = data.favorite;
     if (data.notes !== undefined) updateData.notes = data.notes;
 
-    return getDb()
-      .update(passwords)
-      .set(updateData)
-      .where(eq(passwords.id, id))
-      .returning()
-      .get();
+    return getDb().update(passwords).set(updateData).where(eq(passwords.id, id)).returning().get();
   },
 
   delete(id: number) {
@@ -117,17 +107,19 @@ export const passwordsRepo = {
     let inserted = 0;
     db.transaction(() => {
       for (const e of entries) {
-        db.insert(passwords).values({
-          label: e.label,
-          domain: e.domain,
-          username: e.username,
-          encryptedPassword: e.encryptedPassword,
-          category: e.category || 'other',
-          favorite: e.favorite || 0,
-          notes: e.notes,
-          createdAt: nowStr,
-          updatedAt: nowStr,
-        }).run();
+        db.insert(passwords)
+          .values({
+            label: e.label,
+            domain: e.domain,
+            username: e.username,
+            encryptedPassword: e.encryptedPassword,
+            category: e.category || 'other',
+            favorite: e.favorite || 0,
+            notes: e.notes,
+            createdAt: nowStr,
+            updatedAt: nowStr,
+          })
+          .run();
         inserted++;
       }
     });

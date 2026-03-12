@@ -66,8 +66,18 @@ export function useCreateProject() {
 export function useUpdateProject() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, ...data }: { id: number; name?: string; path?: string; description?: string; url?: string; status?: string; tags?: string[] }) =>
-      apiFetch(`/projects/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    mutationFn: ({
+      id,
+      ...data
+    }: {
+      id: number;
+      name?: string;
+      path?: string;
+      description?: string;
+      url?: string;
+      status?: string;
+      tags?: string[];
+    }) => apiFetch(`/projects/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['projects'] }),
   });
 }
@@ -75,8 +85,7 @@ export function useUpdateProject() {
 export function useDeleteProject() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: number) =>
-      apiFetch(`/projects/${id}`, { method: 'DELETE' }),
+    mutationFn: (id: number) => apiFetch(`/projects/${id}`, { method: 'DELETE' }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['projects'] }),
   });
 }
@@ -84,8 +93,7 @@ export function useDeleteProject() {
 export function useScanProject() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: number) =>
-      apiFetch(`/projects/${id}/scan`, { method: 'POST' }),
+    mutationFn: (id: number) => apiFetch(`/projects/${id}/scan`, { method: 'POST' }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['projects'] }),
   });
 }

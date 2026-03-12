@@ -13,7 +13,15 @@ export const projectsRepo = {
     return getDb().select().from(projects).where(eq(projects.id, id)).get();
   },
 
-  create(data: { name: string; path?: string; description?: string; url?: string; status?: string; tags?: string; techStats?: string }) {
+  create(data: {
+    name: string;
+    path?: string;
+    description?: string;
+    url?: string;
+    status?: string;
+    tags?: string;
+    techStats?: string;
+  }) {
     return getDb()
       .insert(projects)
       .values({ ...data, createdAt: now(), updatedAt: now() })
@@ -21,7 +29,18 @@ export const projectsRepo = {
       .get();
   },
 
-  update(id: number, data: Partial<{ name: string; path: string; description: string; url: string; status: string; tags: string; techStats: string }>) {
+  update(
+    id: number,
+    data: Partial<{
+      name: string;
+      path: string;
+      description: string;
+      url: string;
+      status: string;
+      tags: string;
+      techStats: string;
+    }>,
+  ) {
     return getDb()
       .update(projects)
       .set({ ...data, updatedAt: now() })
@@ -42,10 +61,17 @@ export const projectsRepo = {
     return getDb().select().from(projectScans).where(eq(projectScans.projectId, projectId)).get();
   },
 
-  upsertScan(projectId: number, data: {
-    totalTasks: number; completedTasks: number; blockers: number;
-    wipItems: number; progressPercent: number; rawData: string;
-  }) {
+  upsertScan(
+    projectId: number,
+    data: {
+      totalTasks: number;
+      completedTasks: number;
+      blockers: number;
+      wipItems: number;
+      progressPercent: number;
+      rawData: string;
+    },
+  ) {
     const existing = getDb().select().from(projectScans).where(eq(projectScans.projectId, projectId)).get();
     if (existing) {
       return getDb()

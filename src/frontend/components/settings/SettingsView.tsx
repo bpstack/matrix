@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useSettings, useUpdateSetting } from '../../hooks/useSettings';
+import { useUpdateSetting } from '../../hooks/useSettings';
 import { usePasswordStatus, useChangeMasterPassword, useUnlockVault, useLockVault } from '../../hooks/usePasswords';
 import { useUiStore, Theme } from '../../stores/ui.store';
 import { t } from '../../lib/i18n';
@@ -82,7 +82,7 @@ export function SettingsView() {
         <div className="border border-matrix-border rounded-md p-3">
           <p className="text-xs text-matrix-muted mb-2">Language / Idioma</p>
           <div className="flex gap-2">
-            {(['en', 'es'] as const).map(lang => (
+            {(['en', 'es'] as const).map((lang) => (
               <button
                 key={lang}
                 onClick={() => handleLanguageChange(lang)}
@@ -101,7 +101,12 @@ export function SettingsView() {
         <div className="border border-matrix-border rounded-md p-3">
           <p className="text-xs text-matrix-muted mb-2">Theme / Tema</p>
           <div className="flex gap-2">
-            {([['dark', '🌙', 'Dark', 'Oscuro'], ['light', '☀', 'Light', 'Claro']] as const).map(([key, icon, en, es]) => (
+            {(
+              [
+                ['dark', '🌙', 'Dark', 'Oscuro'],
+                ['light', '☀', 'Light', 'Claro'],
+              ] as const
+            ).map(([key, icon, en, es]) => (
               <button
                 key={key}
                 onClick={() => handleThemeChange(key as Theme)}
@@ -134,10 +139,13 @@ export function SettingsView() {
                   <input
                     type="password"
                     value={unlockPwd}
-                    onChange={e => { setUnlockPwd(e.target.value); setUnlockError(''); }}
+                    onChange={(e) => {
+                      setUnlockPwd(e.target.value);
+                      setUnlockError('');
+                    }}
                     placeholder={t('masterPassword', language)}
                     className="flex-1 bg-matrix-bg border border-matrix-border rounded px-3 py-1.5 text-sm text-gray-200 focus:outline-none focus:border-matrix-accent/50"
-                    onKeyDown={e => e.key === 'Enter' && handleUnlock()}
+                    onKeyDown={(e) => e.key === 'Enter' && handleUnlock()}
                   />
                   <button
                     onClick={handleUnlock}
@@ -169,21 +177,21 @@ export function SettingsView() {
                 <input
                   type="password"
                   value={currentPwd}
-                  onChange={e => setCurrentPwd(e.target.value)}
+                  onChange={(e) => setCurrentPwd(e.target.value)}
                   placeholder={t('currentPassword', language)}
                   className="w-full bg-matrix-bg border border-matrix-border rounded px-3 py-1.5 text-sm text-gray-200 focus:outline-none focus:border-matrix-accent/50"
                 />
                 <input
                   type="password"
                   value={newPwd}
-                  onChange={e => setNewPwd(e.target.value)}
+                  onChange={(e) => setNewPwd(e.target.value)}
                   placeholder={t('newPassword', language)}
                   className="w-full bg-matrix-bg border border-matrix-border rounded px-3 py-1.5 text-sm text-gray-200 focus:outline-none focus:border-matrix-accent/50"
                 />
                 <input
                   type="password"
                   value={confirmPwd}
-                  onChange={e => setConfirmPwd(e.target.value)}
+                  onChange={(e) => setConfirmPwd(e.target.value)}
                   placeholder={t('newPasswordAgain', language)}
                   className="w-full bg-matrix-bg border border-matrix-border rounded px-3 py-1.5 text-sm text-gray-200 focus:outline-none focus:border-matrix-accent/50"
                 />
@@ -198,7 +206,13 @@ export function SettingsView() {
                     {t('save', language)}
                   </button>
                   <button
-                    onClick={() => { setShowChangePassword(false); setPwdError(''); setCurrentPwd(''); setNewPwd(''); setConfirmPwd(''); }}
+                    onClick={() => {
+                      setShowChangePassword(false);
+                      setPwdError('');
+                      setCurrentPwd('');
+                      setNewPwd('');
+                      setConfirmPwd('');
+                    }}
                     className="px-3 py-1.5 text-sm text-gray-400 border border-matrix-border rounded hover:bg-matrix-border/50 transition-colors"
                   >
                     {t('cancel', language)}
@@ -214,8 +228,20 @@ export function SettingsView() {
           <p className="text-xs text-red-400/70 mb-2">Danger Zone</p>
           <button
             onClick={async () => {
-              if (window.confirm(language === 'es' ? '¿Borrar toda la base de datos? Esta acción no se puede deshacer.' : 'Delete entire database? This cannot be undone.')) {
-                if (window.confirm(language === 'es' ? '¿Estás seguro? Todos los datos se perderán.' : 'Are you sure? All data will be lost.')) {
+              if (
+                window.confirm(
+                  language === 'es'
+                    ? '¿Borrar toda la base de datos? Esta acción no se puede deshacer.'
+                    : 'Delete entire database? This cannot be undone.',
+                )
+              ) {
+                if (
+                  window.confirm(
+                    language === 'es'
+                      ? '¿Estás seguro? Todos los datos se perderán.'
+                      : 'Are you sure? All data will be lost.',
+                  )
+                ) {
                   await apiFetch('/db/reset', { method: 'POST' });
                   window.location.reload();
                 }

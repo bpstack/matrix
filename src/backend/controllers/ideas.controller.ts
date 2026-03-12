@@ -94,7 +94,14 @@ export const ideasController = {
     const { alignmentScore, impactScore, costScore, riskScore, reasoning } = parsed.data;
     const totalScore = calcTotalScore(alignmentScore, impactScore, costScore, riskScore);
 
-    const evaluation = ideasRepo.upsertEvaluation(id, { alignmentScore, impactScore, costScore, riskScore, totalScore, reasoning });
+    const evaluation = ideasRepo.upsertEvaluation(id, {
+      alignmentScore,
+      impactScore,
+      costScore,
+      riskScore,
+      totalScore,
+      reasoning,
+    });
 
     // Move idea to evaluating if still pending
     if (idea.status === 'pending') {
@@ -140,24 +147,52 @@ export const ideasController = {
     switch (type) {
       case 'task': {
         if (!parentId) return res.status(400).json({ error: 'parentId required for task (plan id)' });
-        const task = tasksRepo.create({ planId: parentId, title: idea.title, description: idea.description ?? undefined });
+        const task = tasksRepo.create({
+          planId: parentId,
+          title: idea.title,
+          description: idea.description ?? undefined,
+        });
         createdId = task.id;
         break;
       }
       case 'plan': {
         if (!parentId) return res.status(400).json({ error: 'parentId required for plan (objective id)' });
-        const plan = db.insert(plans).values({ objectiveId: parentId, title: idea.title, description: idea.description, createdAt: now(), updatedAt: now() }).returning().get();
+        const plan = db
+          .insert(plans)
+          .values({
+            objectiveId: parentId,
+            title: idea.title,
+            description: idea.description,
+            createdAt: now(),
+            updatedAt: now(),
+          })
+          .returning()
+          .get();
         createdId = plan.id;
         break;
       }
       case 'objective': {
         if (!parentId) return res.status(400).json({ error: 'parentId required for objective (mission id)' });
-        const obj = db.insert(objectives).values({ missionId: parentId, title: idea.title, description: idea.description, createdAt: now(), updatedAt: now() }).returning().get();
+        const obj = db
+          .insert(objectives)
+          .values({
+            missionId: parentId,
+            title: idea.title,
+            description: idea.description,
+            createdAt: now(),
+            updatedAt: now(),
+          })
+          .returning()
+          .get();
         createdId = obj.id;
         break;
       }
       case 'project': {
-        const proj = db.insert(projects).values({ name: idea.title, description: idea.description, createdAt: now(), updatedAt: now() }).returning().get();
+        const proj = db
+          .insert(projects)
+          .values({ name: idea.title, description: idea.description, createdAt: now(), updatedAt: now() })
+          .returning()
+          .get();
         createdId = proj.id;
         break;
       }

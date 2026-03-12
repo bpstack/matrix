@@ -22,7 +22,11 @@ export const tasksRepo = {
     if (filters.planId) conditions.push(eq(tasks.planId, filters.planId));
     if (filters.status) conditions.push(eq(tasks.status, filters.status));
     if (conditions.length === 0) return getDb().select().from(tasks).all();
-    return getDb().select().from(tasks).where(and(...conditions)).all();
+    return getDb()
+      .select()
+      .from(tasks)
+      .where(and(...conditions))
+      .all();
   },
 
   findById(id: number) {
@@ -34,7 +38,14 @@ export const tasksRepo = {
     return result?.count ?? 0;
   },
 
-  create(data: { planId: number; title: string; description?: string; priority?: string; sortOrder?: number; deadline?: string }) {
+  create(data: {
+    planId: number;
+    title: string;
+    description?: string;
+    priority?: string;
+    sortOrder?: number;
+    deadline?: string;
+  }) {
     return getDb()
       .insert(tasks)
       .values({ ...data, createdAt: now(), updatedAt: now() })
@@ -42,7 +53,19 @@ export const tasksRepo = {
       .get();
   },
 
-  update(id: number, data: Partial<{ title: string; description: string; status: string; priority: string; sortOrder: number; planId: number; deadline: string; completedAt: string | null }>) {
+  update(
+    id: number,
+    data: Partial<{
+      title: string;
+      description: string;
+      status: string;
+      priority: string;
+      sortOrder: number;
+      planId: number;
+      deadline: string;
+      completedAt: string | null;
+    }>,
+  ) {
     return getDb()
       .update(tasks)
       .set({ ...data, updatedAt: now() })

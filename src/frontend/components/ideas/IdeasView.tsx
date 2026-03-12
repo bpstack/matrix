@@ -1,8 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import {
-  useIdeas, useCreateIdea, useDeleteIdea, useEvaluateIdea,
-  useIdeaEvaluation, useDecideIdea, usePromoteIdea, useUpdateIdea,
-  Idea, IdeaEvaluation,
+  useIdeas,
+  useCreateIdea,
+  useDeleteIdea,
+  useEvaluateIdea,
+  useIdeaEvaluation,
+  useDecideIdea,
+  usePromoteIdea,
+  useUpdateIdea,
+  Idea,
 } from '../../hooks/useIdeas';
 import { useObjectives } from '../../hooks/useObjectives';
 import { usePlans } from '../../hooks/usePlans';
@@ -101,7 +107,11 @@ export function IdeasView() {
       targetId: newTargetId ? Number(newTargetId) : undefined,
       projectId: newProjectId ? Number(newProjectId) : undefined,
     });
-    setNewTitle(''); setNewDesc(''); setNewTargetType(''); setNewTargetId(''); setNewProjectId('');
+    setNewTitle('');
+    setNewDesc('');
+    setNewTargetType('');
+    setNewTargetId('');
+    setNewProjectId('');
     setShowCreate(false);
   };
 
@@ -152,20 +162,29 @@ export function IdeasView() {
 
   const targetEntities = () => {
     switch (newTargetType) {
-      case 'mission': return mission ? [{ id: mission.id, title: mission.title }] : [];
-      case 'objective': return objectivesList.map((o: { id: number; title: string }) => ({ id: o.id, title: o.title }));
-      case 'plan': return plansList.map((p: { id: number; title: string }) => ({ id: p.id, title: p.title }));
-      default: return [];
+      case 'mission':
+        return mission ? [{ id: mission.id, title: mission.title }] : [];
+      case 'objective':
+        return objectivesList.map((o: { id: number; title: string }) => ({ id: o.id, title: o.title }));
+      case 'plan':
+        return plansList.map((p: { id: number; title: string }) => ({ id: p.id, title: p.title }));
+      default:
+        return [];
     }
   };
 
   const promoteParents = () => {
     switch (promoteType) {
-      case 'task': return plansList.map((p: { id: number; title: string }) => ({ id: p.id, title: p.title }));
-      case 'plan': return objectivesList.map((o: { id: number; title: string }) => ({ id: o.id, title: o.title }));
-      case 'objective': return mission ? [{ id: mission.id, title: mission.title }] : [];
-      case 'project': return [];
-      default: return [];
+      case 'task':
+        return plansList.map((p: { id: number; title: string }) => ({ id: p.id, title: p.title }));
+      case 'plan':
+        return objectivesList.map((o: { id: number; title: string }) => ({ id: o.id, title: o.title }));
+      case 'objective':
+        return mission ? [{ id: mission.id, title: mission.title }] : [];
+      case 'project':
+        return [];
+      default:
+        return [];
     }
   };
 
@@ -177,7 +196,13 @@ export function IdeasView() {
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <h1 className="text-lg font-medium text-gray-200">{t('ideas', language)}</h1>
-          <button onClick={() => setShowHelp(!showHelp)} className="text-matrix-muted hover:text-gray-300 text-xs border border-matrix-border rounded-full w-4 h-4 flex items-center justify-center" title={language === 'es' ? 'Centro de ayuda' : 'Help center'}>?</button>
+          <button
+            onClick={() => setShowHelp(!showHelp)}
+            className="text-matrix-muted hover:text-gray-300 text-xs border border-matrix-border rounded-full w-4 h-4 flex items-center justify-center"
+            title={language === 'es' ? 'Centro de ayuda' : 'Help center'}
+          >
+            ?
+          </button>
         </div>
         <button
           onClick={() => setShowCreate(true)}
@@ -189,10 +214,13 @@ export function IdeasView() {
 
       {/* Kanban */}
       <div className="flex-1 grid grid-cols-4 gap-3 min-h-0 overflow-hidden">
-        {columns.map(col => {
+        {columns.map((col) => {
           const colIdeas = ideas.filter((i: Idea) => i.status === col.key);
           return (
-            <div key={col.key} className={`flex flex-col border-t-2 ${col.color} bg-matrix-bg/50 rounded-md overflow-hidden`}>
+            <div
+              key={col.key}
+              className={`flex flex-col border-t-2 ${col.color} bg-matrix-bg/50 rounded-md overflow-hidden`}
+            >
               <div className="px-3 py-2 flex items-center justify-between text-sm font-medium text-gray-300 border-b border-matrix-border">
                 <span>{col.label}</span>
                 <span className="text-xs text-matrix-muted bg-matrix-bg px-1.5 py-0.5 rounded">{colIdeas.length}</span>
@@ -208,7 +236,11 @@ export function IdeasView() {
                     onEvaluate={() => openEvalModal(idea)}
                     onApprove={() => handleDecide(idea.id, 'approved')}
                     onReject={() => handleDecide(idea.id, 'rejected')}
-                    onPromote={() => { setPromoteTarget(idea); setPromoteType('task'); setPromoteParentId(''); }}
+                    onPromote={() => {
+                      setPromoteTarget(idea);
+                      setPromoteType('task');
+                      setPromoteParentId('');
+                    }}
                     onMoveTo={(status) => handleMoveTo(idea.id, status)}
                     onDelete={() => deleteIdea.mutate(idea.id)}
                   />
@@ -227,21 +259,31 @@ export function IdeasView() {
         <Modal onClose={() => setShowCreate(false)} title={language === 'es' ? 'Nueva idea' : 'New idea'}>
           <div className="space-y-3">
             <input
-              value={newTitle} onChange={e => setNewTitle(e.target.value)}
+              value={newTitle}
+              onChange={(e) => setNewTitle(e.target.value)}
               placeholder={language === 'es' ? 'Titulo de la idea...' : 'Idea title...'}
               className="w-full bg-matrix-bg border border-matrix-border rounded px-3 py-2 text-sm text-gray-200 focus:border-matrix-accent/50 outline-none"
               autoFocus
             />
             <textarea
-              value={newDesc} onChange={e => setNewDesc(e.target.value)}
+              value={newDesc}
+              onChange={(e) => setNewDesc(e.target.value)}
               placeholder={language === 'es' ? 'Descripcion (opcional)' : 'Description (optional)'}
               className="w-full bg-matrix-bg border border-matrix-border rounded px-3 py-2 text-sm text-gray-200 focus:border-matrix-accent/50 outline-none resize-none h-20"
             />
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="text-xs text-matrix-muted block mb-1">{language === 'es' ? 'Vincular a' : 'Link to'}</label>
-                <select value={newTargetType} onChange={e => { setNewTargetType(e.target.value); setNewTargetId(''); }}
-                  className="w-full bg-matrix-bg border border-matrix-border rounded px-2 py-1.5 text-sm text-gray-300">
+                <label className="text-xs text-matrix-muted block mb-1">
+                  {language === 'es' ? 'Vincular a' : 'Link to'}
+                </label>
+                <select
+                  value={newTargetType}
+                  onChange={(e) => {
+                    setNewTargetType(e.target.value);
+                    setNewTargetId('');
+                  }}
+                  className="w-full bg-matrix-bg border border-matrix-border rounded px-2 py-1.5 text-sm text-gray-300"
+                >
                   <option value="">--</option>
                   <option value="mission">Mission</option>
                   <option value="objective">Objective</option>
@@ -251,26 +293,55 @@ export function IdeasView() {
               </div>
               {newTargetType && newTargetType !== 'task' && (
                 <div>
-                  <label className="text-xs text-matrix-muted block mb-1">{language === 'es' ? 'Entidad' : 'Entity'}</label>
-                  <select value={newTargetId} onChange={e => setNewTargetId(Number(e.target.value))}
-                    className="w-full bg-matrix-bg border border-matrix-border rounded px-2 py-1.5 text-sm text-gray-300">
+                  <label className="text-xs text-matrix-muted block mb-1">
+                    {language === 'es' ? 'Entidad' : 'Entity'}
+                  </label>
+                  <select
+                    value={newTargetId}
+                    onChange={(e) => setNewTargetId(Number(e.target.value))}
+                    className="w-full bg-matrix-bg border border-matrix-border rounded px-2 py-1.5 text-sm text-gray-300"
+                  >
                     <option value="">--</option>
-                    {targetEntities().map((e: { id: number; title: string }) => <option key={e.id} value={e.id}>{e.title}</option>)}
+                    {targetEntities().map((e: { id: number; title: string }) => (
+                      <option key={e.id} value={e.id}>
+                        {e.title}
+                      </option>
+                    ))}
                   </select>
                 </div>
               )}
             </div>
             <div>
-              <label className="text-xs text-matrix-muted block mb-1">{language === 'es' ? 'Proyecto' : 'Project'}</label>
-              <select value={newProjectId} onChange={e => setNewProjectId(e.target.value ? Number(e.target.value) : '')}
-                className="w-full bg-matrix-bg border border-matrix-border rounded px-2 py-1.5 text-sm text-gray-300">
+              <label className="text-xs text-matrix-muted block mb-1">
+                {language === 'es' ? 'Proyecto' : 'Project'}
+              </label>
+              <select
+                value={newProjectId}
+                onChange={(e) => setNewProjectId(e.target.value ? Number(e.target.value) : '')}
+                className="w-full bg-matrix-bg border border-matrix-border rounded px-2 py-1.5 text-sm text-gray-300"
+              >
                 <option value="">--</option>
-                {projectsList.map((p: { id: number; name: string }) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                {projectsList.map((p: { id: number; name: string }) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
               </select>
             </div>
             <div className="flex justify-end gap-2">
-              <button onClick={() => setShowCreate(false)} className="px-3 py-1 text-sm text-gray-400 hover:text-gray-300">{t('cancel', language)}</button>
-              <button onClick={handleCreate} disabled={!newTitle.trim()} className="px-3 py-1 text-sm bg-matrix-accent/10 text-matrix-accent border border-matrix-accent/30 rounded hover:bg-matrix-accent/20 disabled:opacity-40">{t('create', language)}</button>
+              <button
+                onClick={() => setShowCreate(false)}
+                className="px-3 py-1 text-sm text-gray-400 hover:text-gray-300"
+              >
+                {t('cancel', language)}
+              </button>
+              <button
+                onClick={handleCreate}
+                disabled={!newTitle.trim()}
+                className="px-3 py-1 text-sm bg-matrix-accent/10 text-matrix-accent border border-matrix-accent/30 rounded hover:bg-matrix-accent/20 disabled:opacity-40"
+              >
+                {t('create', language)}
+              </button>
             </div>
           </div>
         </Modal>
@@ -280,29 +351,59 @@ export function IdeasView() {
       {evalIdea && (
         <Modal onClose={closeEvalModal} title={`${language === 'es' ? 'Evaluar' : 'Evaluate'}: ${evalIdea.title}`}>
           <div className="space-y-4">
-            {(['alignment', 'impact', 'cost', 'risk'] as const).map(key => (
+            {(['alignment', 'impact', 'cost', 'risk'] as const).map((key) => (
               <div key={key}>
                 <div className="flex justify-between text-sm mb-1">
                   <span className="text-gray-300">{scoreLabels[key][language]}</span>
                   <span className="text-matrix-accent font-mono">{scores[key]}</span>
                 </div>
-                <input type="range" min={1} max={10} value={scores[key]}
-                  onChange={e => setScores(s => ({ ...s, [key]: Number(e.target.value) }))}
+                <input
+                  type="range"
+                  min={1}
+                  max={10}
+                  value={scores[key]}
+                  onChange={(e) => setScores((s) => ({ ...s, [key]: Number(e.target.value) }))}
                   className="w-full accent-matrix-accent"
                 />
               </div>
             ))}
             <div className="text-sm text-gray-300">
-              Total Score: <span className="text-matrix-accent font-mono font-bold">{calcTotal(scores.alignment, scores.impact, scores.cost, scores.risk)}</span>
+              Total Score:{' '}
+              <span className="text-matrix-accent font-mono font-bold">
+                {calcTotal(scores.alignment, scores.impact, scores.cost, scores.risk)}
+              </span>
             </div>
-            <textarea value={reasoning} onChange={e => setReasoning(e.target.value)}
+            <textarea
+              value={reasoning}
+              onChange={(e) => setReasoning(e.target.value)}
               placeholder={language === 'es' ? 'Razonamiento...' : 'Reasoning...'}
               className="w-full bg-matrix-bg border border-matrix-border rounded px-3 py-2 text-sm text-gray-200 outline-none resize-none h-16"
             />
             <div className="flex justify-end gap-2">
-              <button onClick={() => { handleEvaluate(); handleDecide(evalIdea.id, 'rejected'); }} className="px-3 py-1 text-sm text-red-400 border border-red-800/30 rounded hover:bg-red-900/20">{language === 'es' ? 'Rechazar' : 'Reject'}</button>
-              <button onClick={() => { handleEvaluate(); handleDecide(evalIdea.id, 'approved'); }} className="px-3 py-1 text-sm text-green-400 border border-green-800/30 rounded hover:bg-green-900/20">{language === 'es' ? 'Aprobar' : 'Approve'}</button>
-              <button onClick={handleEvaluate} className="px-3 py-1 text-sm bg-matrix-accent/10 text-matrix-accent border border-matrix-accent/30 rounded hover:bg-matrix-accent/20">{language === 'es' ? 'Guardar' : 'Save'}</button>
+              <button
+                onClick={() => {
+                  handleEvaluate();
+                  handleDecide(evalIdea.id, 'rejected');
+                }}
+                className="px-3 py-1 text-sm text-red-400 border border-red-800/30 rounded hover:bg-red-900/20"
+              >
+                {language === 'es' ? 'Rechazar' : 'Reject'}
+              </button>
+              <button
+                onClick={() => {
+                  handleEvaluate();
+                  handleDecide(evalIdea.id, 'approved');
+                }}
+                className="px-3 py-1 text-sm text-green-400 border border-green-800/30 rounded hover:bg-green-900/20"
+              >
+                {language === 'es' ? 'Aprobar' : 'Approve'}
+              </button>
+              <button
+                onClick={handleEvaluate}
+                className="px-3 py-1 text-sm bg-matrix-accent/10 text-matrix-accent border border-matrix-accent/30 rounded hover:bg-matrix-accent/20"
+              >
+                {language === 'es' ? 'Guardar' : 'Save'}
+              </button>
             </div>
           </div>
         </Modal>
@@ -310,12 +411,23 @@ export function IdeasView() {
 
       {/* Promote Modal */}
       {promoteTarget && (
-        <Modal onClose={() => setPromoteTarget(null)} title={`${language === 'es' ? 'Promover' : 'Promote'}: ${promoteTarget.title}`}>
+        <Modal
+          onClose={() => setPromoteTarget(null)}
+          title={`${language === 'es' ? 'Promover' : 'Promote'}: ${promoteTarget.title}`}
+        >
           <div className="space-y-3">
             <div>
-              <label className="text-xs text-matrix-muted block mb-1">{language === 'es' ? 'Destino' : 'Destination'}</label>
-              <select value={promoteType} onChange={e => { setPromoteType(e.target.value); setPromoteParentId(''); }}
-                className="w-full bg-matrix-bg border border-matrix-border rounded px-2 py-1.5 text-sm text-gray-300">
+              <label className="text-xs text-matrix-muted block mb-1">
+                {language === 'es' ? 'Destino' : 'Destination'}
+              </label>
+              <select
+                value={promoteType}
+                onChange={(e) => {
+                  setPromoteType(e.target.value);
+                  setPromoteParentId('');
+                }}
+                className="w-full bg-matrix-bg border border-matrix-border rounded px-2 py-1.5 text-sm text-gray-300"
+              >
                 <option value="task">Task</option>
                 <option value="plan">Plan</option>
                 <option value="objective">Objective</option>
@@ -325,17 +437,32 @@ export function IdeasView() {
             {promoteType !== 'project' && (
               <div>
                 <label className="text-xs text-matrix-muted block mb-1">{language === 'es' ? 'Padre' : 'Parent'}</label>
-                <select value={promoteParentId} onChange={e => setPromoteParentId(Number(e.target.value))}
-                  className="w-full bg-matrix-bg border border-matrix-border rounded px-2 py-1.5 text-sm text-gray-300">
+                <select
+                  value={promoteParentId}
+                  onChange={(e) => setPromoteParentId(Number(e.target.value))}
+                  className="w-full bg-matrix-bg border border-matrix-border rounded px-2 py-1.5 text-sm text-gray-300"
+                >
                   <option value="">--</option>
-                  {promoteParents().map((e: { id: number; title: string }) => <option key={e.id} value={e.id}>{e.title}</option>)}
+                  {promoteParents().map((e: { id: number; title: string }) => (
+                    <option key={e.id} value={e.id}>
+                      {e.title}
+                    </option>
+                  ))}
                 </select>
               </div>
             )}
             <div className="flex justify-end gap-2">
-              <button onClick={() => setPromoteTarget(null)} className="px-3 py-1 text-sm text-gray-400 hover:text-gray-300">{t('cancel', language)}</button>
-              <button onClick={handlePromote} disabled={promoteType !== 'project' && !promoteParentId}
-                className="px-3 py-1 text-sm bg-green-900/30 text-green-400 border border-green-800/30 rounded hover:bg-green-900/40 disabled:opacity-40">
+              <button
+                onClick={() => setPromoteTarget(null)}
+                className="px-3 py-1 text-sm text-gray-400 hover:text-gray-300"
+              >
+                {t('cancel', language)}
+              </button>
+              <button
+                onClick={handlePromote}
+                disabled={promoteType !== 'project' && !promoteParentId}
+                className="px-3 py-1 text-sm bg-green-900/30 text-green-400 border border-green-800/30 rounded hover:bg-green-900/40 disabled:opacity-40"
+              >
                 {language === 'es' ? 'Promover' : 'Promote'}
               </button>
             </div>
@@ -349,10 +476,15 @@ export function IdeasView() {
 function Modal({ children, title, onClose }: { children: React.ReactNode; title: string; onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={onClose}>
-      <div className="bg-matrix-surface border border-matrix-border rounded-lg p-4 w-full max-w-md shadow-xl" onClick={e => e.stopPropagation()}>
+      <div
+        className="bg-matrix-surface border border-matrix-border rounded-lg p-4 w-full max-w-md shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-medium text-gray-200">{title}</h3>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-300 text-lg leading-none">&times;</button>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-300 text-lg leading-none">
+            &times;
+          </button>
         </div>
         {children}
       </div>
@@ -360,7 +492,18 @@ function Modal({ children, title, onClose }: { children: React.ReactNode; title:
   );
 }
 
-function IdeaCard({ idea, language, targetLabel, projectName, onEvaluate, onApprove, onReject, onPromote, onMoveTo, onDelete }: {
+function IdeaCard({
+  idea,
+  language,
+  targetLabel,
+  projectName,
+  onEvaluate,
+  onApprove,
+  onReject,
+  onPromote,
+  onMoveTo,
+  onDelete,
+}: {
   idea: Idea;
   language: 'en' | 'es';
   targetLabel: string | null;
@@ -375,12 +518,14 @@ function IdeaCard({ idea, language, targetLabel, projectName, onEvaluate, onAppr
   const shouldFetchEval = idea.status !== 'pending';
   const { data: evaluation } = useIdeaEvaluation(shouldFetchEval ? idea.id : null);
 
-  const evalScores = evaluation ? [
-    { key: 'alignment' as const, value: evaluation.alignmentScore, color: 'text-blue-400' },
-    { key: 'impact' as const, value: evaluation.impactScore, color: 'text-green-400' },
-    { key: 'cost' as const, value: evaluation.costScore, color: 'text-orange-400' },
-    { key: 'risk' as const, value: evaluation.riskScore, color: 'text-red-400' },
-  ] : null;
+  const evalScores = evaluation
+    ? [
+        { key: 'alignment' as const, value: evaluation.alignmentScore, color: 'text-blue-400' },
+        { key: 'impact' as const, value: evaluation.impactScore, color: 'text-green-400' },
+        { key: 'cost' as const, value: evaluation.costScore, color: 'text-orange-400' },
+        { key: 'risk' as const, value: evaluation.riskScore, color: 'text-red-400' },
+      ]
+    : null;
 
   return (
     <div className="bg-matrix-surface border border-matrix-border rounded-md p-2.5">
@@ -410,7 +555,7 @@ function IdeaCard({ idea, language, targetLabel, projectName, onEvaluate, onAppr
       {evaluation && evalScores && (
         <div className="mt-2 pt-2 border-t border-matrix-border/50">
           <div className="grid grid-cols-4 gap-1 mb-1">
-            {evalScores.map(s => (
+            {evalScores.map((s) => (
               <div key={s.key} className="text-center">
                 <span className="text-[9px] text-matrix-muted block">
                   <span className="hidden xl:inline">{scoreLabels[s.key][language]}</span>
@@ -435,30 +580,85 @@ function IdeaCard({ idea, language, targetLabel, projectName, onEvaluate, onAppr
         <span className="text-[10px] text-matrix-muted">{new Date(idea.createdAt).toLocaleDateString()}</span>
         <div className="flex gap-1 flex-wrap justify-end">
           {idea.status === 'pending' && (
-            <ActionBtn onClick={onEvaluate} icon="?" label={language === 'es' ? 'Evaluar' : 'Evaluate'} color="text-yellow-400 hover:text-yellow-300" />
+            <ActionBtn
+              onClick={onEvaluate}
+              icon="?"
+              label={language === 'es' ? 'Evaluar' : 'Evaluate'}
+              color="text-yellow-400 hover:text-yellow-300"
+            />
           )}
           {idea.status === 'evaluating' && (
             <>
-              <ActionBtn onClick={() => onMoveTo('pending')} icon="&#x2190;" label="&#x2190;" color="text-gray-400 hover:text-gray-300" />
-              <ActionBtn onClick={onEvaluate} icon="&#x270E;" label={language === 'es' ? 'Editar' : 'Edit'} color="text-yellow-400 hover:text-yellow-300" />
-              <ActionBtn onClick={onApprove} icon="&#x2713;" label={language === 'es' ? 'Aprobar' : 'Approve'} color="text-green-400 hover:text-green-300" />
-              <ActionBtn onClick={onReject} icon="&#x2717;" label={language === 'es' ? 'Rechazar' : 'Reject'} color="text-red-400 hover:text-red-300" />
+              <ActionBtn
+                onClick={() => onMoveTo('pending')}
+                icon="&#x2190;"
+                label="&#x2190;"
+                color="text-gray-400 hover:text-gray-300"
+              />
+              <ActionBtn
+                onClick={onEvaluate}
+                icon="&#x270E;"
+                label={language === 'es' ? 'Editar' : 'Edit'}
+                color="text-yellow-400 hover:text-yellow-300"
+              />
+              <ActionBtn
+                onClick={onApprove}
+                icon="&#x2713;"
+                label={language === 'es' ? 'Aprobar' : 'Approve'}
+                color="text-green-400 hover:text-green-300"
+              />
+              <ActionBtn
+                onClick={onReject}
+                icon="&#x2717;"
+                label={language === 'es' ? 'Rechazar' : 'Reject'}
+                color="text-red-400 hover:text-red-300"
+              />
             </>
           )}
           {idea.status === 'approved' && !idea.promotedToType && (
             <>
-              <ActionBtn onClick={() => onMoveTo('evaluating')} icon="&#x2190;" label="&#x2190;" color="text-gray-400 hover:text-gray-300" />
-              <ActionBtn onClick={() => onMoveTo('pending')} icon="&#x21C7;" label={language === 'es' ? 'Volver a pendiente' : 'Back to pending'} color="text-gray-400 hover:text-gray-300" />
-              <ActionBtn onClick={onPromote} icon="&#x2191;" label={language === 'es' ? 'Promover' : 'Promote'} color="text-matrix-accent hover:text-matrix-accent/80" />
+              <ActionBtn
+                onClick={() => onMoveTo('evaluating')}
+                icon="&#x2190;"
+                label="&#x2190;"
+                color="text-gray-400 hover:text-gray-300"
+              />
+              <ActionBtn
+                onClick={() => onMoveTo('pending')}
+                icon="&#x21C7;"
+                label={language === 'es' ? 'Volver a pendiente' : 'Back to pending'}
+                color="text-gray-400 hover:text-gray-300"
+              />
+              <ActionBtn
+                onClick={onPromote}
+                icon="&#x2191;"
+                label={language === 'es' ? 'Promover' : 'Promote'}
+                color="text-matrix-accent hover:text-matrix-accent/80"
+              />
             </>
           )}
           {idea.status === 'rejected' && (
             <>
-              <ActionBtn onClick={() => onMoveTo('evaluating')} icon="&#x2190;" label="&#x2190;" color="text-gray-400 hover:text-gray-300" />
-              <ActionBtn onClick={() => onMoveTo('pending')} icon="&#x21C7;" label={language === 'es' ? 'Volver a pendiente' : 'Back to pending'} color="text-blue-400 hover:text-blue-300" />
+              <ActionBtn
+                onClick={() => onMoveTo('evaluating')}
+                icon="&#x2190;"
+                label="&#x2190;"
+                color="text-gray-400 hover:text-gray-300"
+              />
+              <ActionBtn
+                onClick={() => onMoveTo('pending')}
+                icon="&#x21C7;"
+                label={language === 'es' ? 'Volver a pendiente' : 'Back to pending'}
+                color="text-blue-400 hover:text-blue-300"
+              />
             </>
           )}
-          <ActionBtn onClick={onDelete} icon="&#x2715;" label={language === 'es' ? 'Borrar' : 'Del'} color="text-red-400/60 hover:text-red-400" />
+          <ActionBtn
+            onClick={onDelete}
+            icon="&#x2715;"
+            label={language === 'es' ? 'Borrar' : 'Del'}
+            color="text-red-400/60 hover:text-red-400"
+          />
         </div>
       </div>
     </div>
@@ -470,79 +670,125 @@ function HelpPanel({ language, onClose }: { language: 'en' | 'es'; onClose: () =
   return (
     <div className="mt-4 shrink-0 border border-matrix-border rounded-md bg-matrix-surface overflow-hidden">
       <div className="flex items-center justify-between px-4 py-2 border-b border-matrix-border">
-        <span className="text-xs font-medium text-gray-300">{es ? 'Centro de ayuda — Ideas Pipeline' : 'Help Center — Ideas Pipeline'}</span>
-        <button onClick={onClose} className="text-gray-500 hover:text-gray-300 text-sm leading-none">&times;</button>
+        <span className="text-xs font-medium text-gray-300">
+          {es ? 'Centro de ayuda — Ideas Pipeline' : 'Help Center — Ideas Pipeline'}
+        </span>
+        <button onClick={onClose} className="text-gray-500 hover:text-gray-300 text-sm leading-none">
+          &times;
+        </button>
       </div>
       <div className="px-4 py-3 text-xs text-gray-400 space-y-3">
         {/* Overview */}
         <div>
           <p className="text-gray-300 font-medium mb-1">{es ? 'Flujo de trabajo' : 'Workflow'}</p>
-          <p>{es
-            ? 'El pipeline de ideas te permite capturar cualquier idea de forma rapida y decidir con criterio si merece convertirse en algo accionable. Cada idea avanza por 4 etapas:'
-            : 'The ideas pipeline lets you quickly capture any idea and decide with clear criteria whether it deserves to become actionable. Each idea progresses through 4 stages:'
-          }</p>
+          <p>
+            {es
+              ? 'El pipeline de ideas te permite capturar cualquier idea de forma rapida y decidir con criterio si merece convertirse en algo accionable. Cada idea avanza por 4 etapas:'
+              : 'The ideas pipeline lets you quickly capture any idea and decide with clear criteria whether it deserves to become actionable. Each idea progresses through 4 stages:'}
+          </p>
         </div>
 
         {/* Stages */}
         <div className="grid grid-cols-4 gap-2">
           <div className="bg-matrix-bg rounded p-2 border-t-2 border-gray-600">
             <p className="text-gray-300 font-medium mb-0.5">Pending</p>
-            <p>{es
-              ? 'Ideas recien capturadas. Aqui vive todo lo que se te ocurra sin compromiso. El objetivo es capturar con friccion minima.'
-              : 'Freshly captured ideas. Everything you come up with lives here with no commitment. The goal is to capture with minimal friction.'
-            }</p>
+            <p>
+              {es
+                ? 'Ideas recien capturadas. Aqui vive todo lo que se te ocurra sin compromiso. El objetivo es capturar con friccion minima.'
+                : 'Freshly captured ideas. Everything you come up with lives here with no commitment. The goal is to capture with minimal friction.'}
+            </p>
           </div>
           <div className="bg-matrix-bg rounded p-2 border-t-2 border-yellow-600">
             <p className="text-gray-300 font-medium mb-0.5">Evaluating</p>
-            <p>{es
-              ? 'Ideas en proceso de evaluacion. Se puntuan con 4 criterios para decidir objetivamente si merecen accion.'
-              : 'Ideas being evaluated. They are scored on 4 criteria to objectively decide whether they deserve action.'
-            }</p>
+            <p>
+              {es
+                ? 'Ideas en proceso de evaluacion. Se puntuan con 4 criterios para decidir objetivamente si merecen accion.'
+                : 'Ideas being evaluated. They are scored on 4 criteria to objectively decide whether they deserve action.'}
+            </p>
           </div>
           <div className="bg-matrix-bg rounded p-2 border-t-2 border-green-600">
             <p className="text-gray-300 font-medium mb-0.5">Approved</p>
-            <p>{es
-              ? 'Ideas aprobadas listas para ser promovidas a una entidad concreta del sistema: tarea, plan, objetivo o proyecto.'
-              : 'Approved ideas ready to be promoted to a concrete entity in the system: task, plan, objective, or project.'
-            }</p>
+            <p>
+              {es
+                ? 'Ideas aprobadas listas para ser promovidas a una entidad concreta del sistema: tarea, plan, objetivo o proyecto.'
+                : 'Approved ideas ready to be promoted to a concrete entity in the system: task, plan, objective, or project.'}
+            </p>
           </div>
           <div className="bg-matrix-bg rounded p-2 border-t-2 border-red-600">
             <p className="text-gray-300 font-medium mb-0.5">Rejected</p>
-            <p>{es
-              ? 'Ideas descartadas. Pueden recuperarse en cualquier momento si las circunstancias cambian.'
-              : 'Discarded ideas. They can be recovered at any time if circumstances change.'
-            }</p>
+            <p>
+              {es
+                ? 'Ideas descartadas. Pueden recuperarse en cualquier momento si las circunstancias cambian.'
+                : 'Discarded ideas. They can be recovered at any time if circumstances change.'}
+            </p>
           </div>
         </div>
 
         {/* Evaluation */}
         <div>
           <p className="text-gray-300 font-medium mb-1">{es ? 'Sistema de evaluacion' : 'Evaluation system'}</p>
-          <p className="mb-1">{es
-            ? 'Cada idea se evalua con 4 criterios en escala del 1 al 10:'
-            : 'Each idea is evaluated with 4 criteria on a scale of 1 to 10:'
-          }</p>
+          <p className="mb-1">
+            {es
+              ? 'Cada idea se evalua con 4 criterios en escala del 1 al 10:'
+              : 'Each idea is evaluated with 4 criteria on a scale of 1 to 10:'}
+          </p>
           <ul className="space-y-0.5 ml-2">
-            <li><span className="text-blue-400">{es ? 'Alineacion' : 'Alignment'}</span> — {es ? 'Coherencia con tu mision y objetivos estrategicos.' : 'Coherence with your mission and strategic objectives.'}</li>
-            <li><span className="text-green-400">{es ? 'Impacto' : 'Impact'}</span> — {es ? 'Beneficio potencial que generaria si se ejecuta.' : 'Potential benefit if executed.'}</li>
-            <li><span className="text-orange-400">{es ? 'Coste' : 'Cost'}</span> — {es ? 'Esfuerzo, tiempo o recursos necesarios (menor = mejor).' : 'Effort, time, or resources needed (lower = better).'}</li>
-            <li><span className="text-red-400">{es ? 'Riesgo' : 'Risk'}</span> — {es ? 'Probabilidad de fallar o generar problemas (menor = mejor).' : 'Likelihood of failure or causing problems (lower = better).'}</li>
+            <li>
+              <span className="text-blue-400">{es ? 'Alineacion' : 'Alignment'}</span> —{' '}
+              {es
+                ? 'Coherencia con tu mision y objetivos estrategicos.'
+                : 'Coherence with your mission and strategic objectives.'}
+            </li>
+            <li>
+              <span className="text-green-400">{es ? 'Impacto' : 'Impact'}</span> —{' '}
+              {es ? 'Beneficio potencial que generaria si se ejecuta.' : 'Potential benefit if executed.'}
+            </li>
+            <li>
+              <span className="text-orange-400">{es ? 'Coste' : 'Cost'}</span> —{' '}
+              {es
+                ? 'Esfuerzo, tiempo o recursos necesarios (menor = mejor).'
+                : 'Effort, time, or resources needed (lower = better).'}
+            </li>
+            <li>
+              <span className="text-red-400">{es ? 'Riesgo' : 'Risk'}</span> —{' '}
+              {es
+                ? 'Probabilidad de fallar o generar problemas (menor = mejor).'
+                : 'Likelihood of failure or causing problems (lower = better).'}
+            </li>
           </ul>
-          <p className="mt-1 text-matrix-muted">{es ? 'Formula: ' : 'Formula: '}<span className="font-mono text-gray-400">Score = ALI x 0.4 + IMP x 0.3 + (10 - CST) x 0.15 + (10 - RSK) x 0.15</span></p>
+          <p className="mt-1 text-matrix-muted">
+            {es ? 'Formula: ' : 'Formula: '}
+            <span className="font-mono text-gray-400">
+              Score = ALI x 0.4 + IMP x 0.3 + (10 - CST) x 0.15 + (10 - RSK) x 0.15
+            </span>
+          </p>
         </div>
 
         {/* Promotion */}
         <div>
           <p className="text-gray-300 font-medium mb-1">{es ? 'Promocion' : 'Promotion'}</p>
-          <p>{es
-            ? 'Cuando una idea se aprueba, puedes promoverla a una entidad real del sistema. La idea queda vinculada al elemento creado para mantener trazabilidad completa:'
-            : 'When an idea is approved, you can promote it to a real entity in the system. The idea remains linked to the created element for full traceability:'
-          }</p>
+          <p>
+            {es
+              ? 'Cuando una idea se aprueba, puedes promoverla a una entidad real del sistema. La idea queda vinculada al elemento creado para mantener trazabilidad completa:'
+              : 'When an idea is approved, you can promote it to a real entity in the system. The idea remains linked to the created element for full traceability:'}
+          </p>
           <ul className="space-y-0.5 ml-2 mt-1">
-            <li><span className="text-gray-300">Task</span> — {es ? 'Se crea dentro de un plan existente.' : 'Created inside an existing plan.'}</li>
-            <li><span className="text-gray-300">Plan</span> — {es ? 'Se crea dentro de un objetivo existente.' : 'Created inside an existing objective.'}</li>
-            <li><span className="text-gray-300">Objective</span> — {es ? 'Se crea dentro de la mision activa.' : 'Created inside the active mission.'}</li>
-            <li><span className="text-gray-300">Project</span> — {es ? 'Se crea como proyecto independiente.' : 'Created as a standalone project.'}</li>
+            <li>
+              <span className="text-gray-300">Task</span> —{' '}
+              {es ? 'Se crea dentro de un plan existente.' : 'Created inside an existing plan.'}
+            </li>
+            <li>
+              <span className="text-gray-300">Plan</span> —{' '}
+              {es ? 'Se crea dentro de un objetivo existente.' : 'Created inside an existing objective.'}
+            </li>
+            <li>
+              <span className="text-gray-300">Objective</span> —{' '}
+              {es ? 'Se crea dentro de la mision activa.' : 'Created inside the active mission.'}
+            </li>
+            <li>
+              <span className="text-gray-300">Project</span> —{' '}
+              {es ? 'Se crea como proyecto independiente.' : 'Created as a standalone project.'}
+            </li>
           </ul>
         </div>
 
@@ -550,14 +796,30 @@ function HelpPanel({ language, onClose }: { language: 'en' | 'es'; onClose: () =
         <div>
           <p className="text-gray-300 font-medium mb-1">{es ? 'Iconos de accion' : 'Action icons'}</p>
           <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 ml-2">
-            <span><span className="text-yellow-400">?</span> — {es ? 'Evaluar idea' : 'Evaluate idea'}</span>
-            <span><span className="text-yellow-400">&#x270E;</span> — {es ? 'Editar evaluacion' : 'Edit evaluation'}</span>
-            <span><span className="text-green-400">&#x2713;</span> — {es ? 'Aprobar' : 'Approve'}</span>
-            <span><span className="text-red-400">&#x2717;</span> — {es ? 'Rechazar' : 'Reject'}</span>
-            <span><span className="text-matrix-accent">&#x2191;</span> — {es ? 'Promover' : 'Promote'}</span>
-            <span><span className="text-red-400">&#x2715;</span> — {es ? 'Eliminar' : 'Delete'}</span>
-            <span><span className="text-gray-400">&#x2190;</span> — {es ? 'Volver un paso' : 'Go back one step'}</span>
-            <span><span className="text-blue-400">&#x21C7;</span> — {es ? 'Volver a pendiente' : 'Back to pending'}</span>
+            <span>
+              <span className="text-yellow-400">?</span> — {es ? 'Evaluar idea' : 'Evaluate idea'}
+            </span>
+            <span>
+              <span className="text-yellow-400">&#x270E;</span> — {es ? 'Editar evaluacion' : 'Edit evaluation'}
+            </span>
+            <span>
+              <span className="text-green-400">&#x2713;</span> — {es ? 'Aprobar' : 'Approve'}
+            </span>
+            <span>
+              <span className="text-red-400">&#x2717;</span> — {es ? 'Rechazar' : 'Reject'}
+            </span>
+            <span>
+              <span className="text-matrix-accent">&#x2191;</span> — {es ? 'Promover' : 'Promote'}
+            </span>
+            <span>
+              <span className="text-red-400">&#x2715;</span> — {es ? 'Eliminar' : 'Delete'}
+            </span>
+            <span>
+              <span className="text-gray-400">&#x2190;</span> — {es ? 'Volver un paso' : 'Go back one step'}
+            </span>
+            <span>
+              <span className="text-blue-400">&#x21C7;</span> — {es ? 'Volver a pendiente' : 'Back to pending'}
+            </span>
           </div>
         </div>
       </div>
@@ -565,10 +827,23 @@ function HelpPanel({ language, onClose }: { language: 'en' | 'es'; onClose: () =
   );
 }
 
-function ActionBtn({ onClick, icon, label, color }: {
-  onClick: () => void; icon: string; label: string; color: string;
+function ActionBtn({
+  onClick,
+  icon,
+  label,
+  color,
+}: {
+  onClick: () => void;
+  icon: string;
+  label: string;
+  color: string;
 }) {
   return (
-    <button onClick={onClick} className={`text-[10px] ${color}`} title={label} dangerouslySetInnerHTML={{ __html: icon }} />
+    <button
+      onClick={onClick}
+      className={`text-[10px] ${color}`}
+      title={label}
+      dangerouslySetInnerHTML={{ __html: icon }}
+    />
   );
 }

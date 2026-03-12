@@ -49,15 +49,18 @@ export function ProjectDetail({ projectId, onBack }: Props) {
   };
 
   const saveEdit = () => {
-    updateProject.mutate({
-      id: project.id,
-      name: editName.trim() || undefined,
-      path: editPath.trim() || undefined,
-      url: editUrl.trim() || undefined,
-      description: editDescription.trim() || undefined,
-    }, {
-      onSuccess: () => setIsEditing(false),
-    });
+    updateProject.mutate(
+      {
+        id: project.id,
+        name: editName.trim() || undefined,
+        path: editPath.trim() || undefined,
+        url: editUrl.trim() || undefined,
+        description: editDescription.trim() || undefined,
+      },
+      {
+        onSuccess: () => setIsEditing(false),
+      },
+    );
   };
 
   const handleDelete = () => {
@@ -87,14 +90,14 @@ export function ProjectDetail({ projectId, onBack }: Props) {
           <div className="flex-1 space-y-3 mr-4">
             <input
               value={editName}
-              onChange={e => setEditName(e.target.value)}
+              onChange={(e) => setEditName(e.target.value)}
               placeholder={t('projectName', language)}
               className="w-full px-3 py-2 bg-matrix-bg border border-matrix-border rounded text-lg font-semibold text-gray-200 placeholder-matrix-muted focus:border-matrix-accent focus:outline-none"
             />
             <div className="flex gap-2">
               <input
                 value={editPath}
-                onChange={e => setEditPath(e.target.value)}
+                onChange={(e) => setEditPath(e.target.value)}
                 placeholder={t('projectPath', language)}
                 className="flex-1 px-3 py-2 bg-matrix-bg border border-matrix-border rounded text-sm text-gray-200 placeholder-matrix-muted focus:border-matrix-accent focus:outline-none"
               />
@@ -107,22 +110,28 @@ export function ProjectDetail({ projectId, onBack }: Props) {
             </div>
             <input
               value={editUrl}
-              onChange={e => setEditUrl(e.target.value)}
+              onChange={(e) => setEditUrl(e.target.value)}
               placeholder="URL (GitHub, GitLab...)"
               className="w-full px-3 py-2 bg-matrix-bg border border-matrix-border rounded text-sm text-gray-200 placeholder-matrix-muted focus:border-matrix-accent focus:outline-none"
             />
             <textarea
               value={editDescription}
-              onChange={e => setEditDescription(e.target.value)}
+              onChange={(e) => setEditDescription(e.target.value)}
               placeholder={t('taskDescription', language)}
               rows={2}
               className="w-full px-3 py-2 bg-matrix-bg border border-matrix-border rounded text-sm text-gray-200 placeholder-matrix-muted focus:border-matrix-accent focus:outline-none resize-none"
             />
             <div className="flex gap-2">
-              <button onClick={saveEdit} className="px-3 py-1.5 text-sm bg-matrix-accent text-black rounded hover:bg-matrix-accent-hover transition-colors font-medium">
+              <button
+                onClick={saveEdit}
+                className="px-3 py-1.5 text-sm bg-matrix-accent text-black rounded hover:bg-matrix-accent-hover transition-colors font-medium"
+              >
                 {t('save', language)}
               </button>
-              <button onClick={() => setIsEditing(false)} className="px-3 py-1.5 text-sm text-matrix-muted hover:text-gray-300 transition-colors">
+              <button
+                onClick={() => setIsEditing(false)}
+                className="px-3 py-1.5 text-sm text-matrix-muted hover:text-gray-300 transition-colors"
+              >
                 {t('cancel', language)}
               </button>
             </div>
@@ -131,13 +140,21 @@ export function ProjectDetail({ projectId, onBack }: Props) {
           <div>
             <div className="flex items-center gap-3 mb-1">
               <h1 className="text-xl font-semibold text-gray-200">{project.name}</h1>
-              <button onClick={cycleStatus} className={`px-2 py-0.5 text-xs rounded-full ${statusColors[project.status] || ''}`}>
+              <button
+                onClick={cycleStatus}
+                className={`px-2 py-0.5 text-xs rounded-full ${statusColors[project.status] || ''}`}
+              >
                 {project.status.charAt(0).toUpperCase() + project.status.slice(1)}
               </button>
             </div>
             {project.description && <p className="text-sm text-matrix-muted">{project.description}</p>}
             {project.url && (
-              <a href={project.url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-400 hover:underline mt-1 inline-block">
+              <a
+                href={project.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-blue-400 hover:underline mt-1 inline-block"
+              >
                 {project.url}
               </a>
             )}
@@ -146,10 +163,16 @@ export function ProjectDetail({ projectId, onBack }: Props) {
         <div className="flex gap-2 shrink-0">
           {!isEditing && (
             <>
-              <button onClick={startEdit} className="px-3 py-1.5 text-sm bg-matrix-surface border border-matrix-border text-gray-300 rounded hover:bg-matrix-bg transition-colors">
+              <button
+                onClick={startEdit}
+                className="px-3 py-1.5 text-sm bg-matrix-surface border border-matrix-border text-gray-300 rounded hover:bg-matrix-bg transition-colors"
+              >
                 ✎ {t('edit', language)}
               </button>
-              <button onClick={handleDelete} className="px-3 py-1.5 text-sm text-matrix-danger hover:bg-matrix-danger/10 rounded transition-colors">
+              <button
+                onClick={handleDelete}
+                className="px-3 py-1.5 text-sm text-matrix-danger hover:bg-matrix-danger/10 rounded transition-colors"
+              >
                 ✕
               </button>
             </>
@@ -176,8 +199,16 @@ export function ProjectDetail({ projectId, onBack }: Props) {
           <>
             <InfoCard label={t('linesOfCode', language)} value={formatLines(ts.totalLines)} />
             <InfoCard label={t('deps', language)} value={String(ts.dependencies)} />
-            <InfoCard label="Tests" value={ts.hasTests ? '✓' : '✕'} color={ts.hasTests ? 'text-matrix-success' : 'text-matrix-danger'} />
-            <InfoCard label="CI/CD" value={ts.hasCiCd ? '✓' : '✕'} color={ts.hasCiCd ? 'text-matrix-success' : 'text-matrix-danger'} />
+            <InfoCard
+              label="Tests"
+              value={ts.hasTests ? '✓' : '✕'}
+              color={ts.hasTests ? 'text-matrix-success' : 'text-matrix-danger'}
+            />
+            <InfoCard
+              label="CI/CD"
+              value={ts.hasCiCd ? '✓' : '✕'}
+              color={ts.hasCiCd ? 'text-matrix-success' : 'text-matrix-danger'}
+            />
           </>
         )}
       </div>
@@ -190,10 +221,15 @@ export function ProjectDetail({ projectId, onBack }: Props) {
             <span className="text-sm font-mono text-matrix-accent">{scan.progressPercent}%</span>
           </div>
           <div className="h-2 bg-matrix-bg rounded-full overflow-hidden mb-3">
-            <div className="h-full bg-matrix-accent rounded-full transition-all" style={{ width: `${scan.progressPercent}%` }} />
+            <div
+              className="h-full bg-matrix-accent rounded-full transition-all"
+              style={{ width: `${scan.progressPercent}%` }}
+            />
           </div>
           <div className="flex gap-4 text-xs text-matrix-muted">
-            <span>☑ {scan.completedTasks}/{scan.totalTasks} tasks</span>
+            <span>
+              ☑ {scan.completedTasks}/{scan.totalTasks} tasks
+            </span>
             {scan.blockers > 0 && <span className="text-matrix-danger">⚠ {scan.blockers} blockers</span>}
             {scan.wipItems > 0 && <span className="text-matrix-warning">◉ {scan.wipItems} WIP</span>}
           </div>
@@ -206,12 +242,17 @@ export function ProjectDetail({ projectId, onBack }: Props) {
           <h3 className="text-sm font-medium text-gray-300 mb-3">{t('languages', language)}</h3>
           {/* Language bar */}
           <div className="h-2 rounded-full overflow-hidden flex mb-3">
-            {ts.languages.map(lang => (
-              <div key={lang.name} className="h-full" style={{ backgroundColor: lang.color, width: `${lang.percent}%` }} title={`${lang.name} ${lang.percent}%`} />
+            {ts.languages.map((lang) => (
+              <div
+                key={lang.name}
+                className="h-full"
+                style={{ backgroundColor: lang.color, width: `${lang.percent}%` }}
+                title={`${lang.name} ${lang.percent}%`}
+              />
             ))}
           </div>
           <div className="flex flex-wrap gap-3">
-            {ts.languages.map(lang => (
+            {ts.languages.map((lang) => (
               <span key={lang.name} className="flex items-center gap-1.5 text-xs text-matrix-muted">
                 <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: lang.color }} />
                 {lang.name} <span className="text-gray-500">{lang.percent}%</span>
@@ -234,41 +275,75 @@ export function ProjectDetail({ projectId, onBack }: Props) {
                 <span className="w-12 text-center">Tasks</span>
                 <span className="flex-1 mx-2">Progress</span>
                 <span className="w-8 text-right">%</span>
-                <span className="w-10 text-center" title="Blockers - Issues that are blocking progress">⚠</span>
-                <span className="w-10 text-center" title="WIP - Work in progress items">◉</span>
+                <span className="w-10 text-center" title="Blockers - Issues that are blocking progress">
+                  ⚠
+                </span>
+                <span className="w-10 text-center" title="WIP - Work in progress items">
+                  ◉
+                </span>
               </div>
               <div className="space-y-1">
-                {rawData.map((f: { file: string; completedTasks: number; totalTasks: number; progressPercent: number; blockers: string[]; wipItems: string[] }) => (
-                  <div key={f.file} className="flex items-center text-xs bg-matrix-bg/50 rounded px-2 py-1.5">
-                    <span className="w-24 text-gray-300 font-mono truncate" title={f.file}>{f.file}</span>
-                    <span className="w-12 text-center text-matrix-muted">{f.completedTasks}/{f.totalTasks}</span>
-                    <div className="flex-1 mx-2">
-                      <div className="h-1 bg-matrix-border rounded-full overflow-hidden">
-                        <div className="h-full bg-matrix-accent rounded-full" style={{ width: `${f.progressPercent}%` }} />
+                {rawData.map(
+                  (f: {
+                    file: string;
+                    completedTasks: number;
+                    totalTasks: number;
+                    progressPercent: number;
+                    blockers: string[];
+                    wipItems: string[];
+                  }) => (
+                    <div key={f.file} className="flex items-center text-xs bg-matrix-bg/50 rounded px-2 py-1.5">
+                      <span className="w-24 text-gray-300 font-mono truncate" title={f.file}>
+                        {f.file}
+                      </span>
+                      <span className="w-12 text-center text-matrix-muted">
+                        {f.completedTasks}/{f.totalTasks}
+                      </span>
+                      <div className="flex-1 mx-2">
+                        <div className="h-1 bg-matrix-border rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-matrix-accent rounded-full"
+                            style={{ width: `${f.progressPercent}%` }}
+                          />
+                        </div>
                       </div>
+                      <span className="w-8 text-right text-matrix-accent font-mono">{f.progressPercent}%</span>
+                      <span className="w-10 text-center">
+                        {f.blockers.length > 0 ? (
+                          <span
+                            className="inline-flex items-center justify-center w-5 h-5 rounded bg-matrix-danger/20 text-matrix-danger text-xs font-bold cursor-help"
+                            title={`BLOCKERS:\n\n${f.blockers.join('\n')}`}
+                          >
+                            {f.blockers.length}
+                          </span>
+                        ) : (
+                          <span className="text-gray-600">-</span>
+                        )}
+                      </span>
+                      <span className="w-10 text-center">
+                        {f.wipItems.length > 0 ? (
+                          <span
+                            className="inline-flex items-center justify-center w-5 h-5 rounded bg-matrix-warning/20 text-matrix-warning text-xs font-bold cursor-help"
+                            title={`WORK IN PROGRESS:\n\n${f.wipItems.join('\n')}`}
+                          >
+                            {f.wipItems.length}
+                          </span>
+                        ) : (
+                          <span className="text-gray-600">-</span>
+                        )}
+                      </span>
                     </div>
-                    <span className="w-8 text-right text-matrix-accent font-mono">{f.progressPercent}%</span>
-                    <span className="w-10 text-center">
-                      {f.blockers.length > 0 ? (
-                        <span className="inline-flex items-center justify-center w-5 h-5 rounded bg-matrix-danger/20 text-matrix-danger text-xs font-bold cursor-help" title={`BLOCKERS:\n\n${f.blockers.join('\n')}`}>
-                          {f.blockers.length}
-                        </span>
-                      ) : <span className="text-gray-600">-</span>}
-                    </span>
-                    <span className="w-10 text-center">
-                      {f.wipItems.length > 0 ? (
-                        <span className="inline-flex items-center justify-center w-5 h-5 rounded bg-matrix-warning/20 text-matrix-warning text-xs font-bold cursor-help" title={`WORK IN PROGRESS:\n\n${f.wipItems.join('\n')}`}>
-                          {f.wipItems.length}
-                        </span>
-                      ) : <span className="text-gray-600">-</span>}
-                    </span>
-                  </div>
-                ))}
+                  ),
+                )}
               </div>
               {/* Legend */}
               <div className="mt-2 pt-2 border-t border-matrix-border flex gap-3 text-xs text-matrix-muted">
-                <span><span className="text-matrix-danger">⚠</span> Blocker</span>
-                <span><span className="text-matrix-warning">◉</span> Work in progress</span>
+                <span>
+                  <span className="text-matrix-danger">⚠</span> Blocker
+                </span>
+                <span>
+                  <span className="text-matrix-warning">◉</span> Work in progress
+                </span>
               </div>
             </div>
           )}
@@ -319,8 +394,10 @@ export function ProjectDetail({ projectId, onBack }: Props) {
       {/* Tags */}
       {project.tags.length > 0 && (
         <div className="mt-4 flex gap-2 flex-wrap">
-          {project.tags.map(tag => (
-            <span key={tag} className="px-2 py-0.5 text-xs bg-blue-400/10 text-blue-400 rounded-full">{tag}</span>
+          {project.tags.map((tag) => (
+            <span key={tag} className="px-2 py-0.5 text-xs bg-blue-400/10 text-blue-400 rounded-full">
+              {tag}
+            </span>
           ))}
         </div>
       )}
@@ -332,7 +409,9 @@ function InfoCard({ label, value, small, color }: { label: string; value: string
   return (
     <div className="p-3 bg-matrix-surface rounded-lg border border-matrix-border">
       <p className="text-xs text-matrix-muted mb-1">{label}</p>
-      <p className={`${small ? 'text-xs font-mono truncate' : 'text-lg font-semibold'} ${color || 'text-gray-200'}`}>{value}</p>
+      <p className={`${small ? 'text-xs font-mono truncate' : 'text-lg font-semibold'} ${color || 'text-gray-200'}`}>
+        {value}
+      </p>
     </div>
   );
 }

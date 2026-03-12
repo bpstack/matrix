@@ -9,7 +9,9 @@ import { API_PORT } from './config/constants';
 import type { Server } from 'http';
 
 process.on('uncaughtException', (err) => {
-  fs.writeFileSync(path.join(app.getPath('userData'), 'crash.log'), `${new Date().toISOString()} ${err.stack}\n`, { flag: 'a' });
+  fs.writeFileSync(path.join(app.getPath('userData'), 'crash.log'), `${new Date().toISOString()} ${err.stack}\n`, {
+    flag: 'a',
+  });
   console.error('[Matrix] Uncaught:', err);
 });
 
@@ -125,9 +127,7 @@ const createWindow = (): void => {
   if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
     mainWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
   } else {
-    mainWindow.loadFile(
-      path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`),
-    );
+    mainWindow.loadFile(path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`));
   }
 
   if (!app.isPackaged) {
@@ -187,7 +187,7 @@ app.on('ready', () => {
   });
 
   server = expressApp.listen(API_PORT, () => {
-    console.log(`[Matrix] API running on http://localhost:${API_PORT}`);
+    console.warn(`[Matrix] API running on http://localhost:${API_PORT}`);
   });
 
   createWindow();

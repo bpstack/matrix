@@ -28,8 +28,11 @@ const queryClient = new QueryClient({
 
 // Also handle 401 on queries (auto-lock detection)
 queryClient.getQueryCache().subscribe((event) => {
-  if (event.type === 'updated' && event.query.state.error instanceof Error &&
-      event.query.state.error.message === 'Vault is locked') {
+  if (
+    event.type === 'updated' &&
+    event.query.state.error instanceof Error &&
+    event.query.state.error.message === 'Vault is locked'
+  ) {
     queryClient.invalidateQueries({ queryKey: ['passwords', 'status'] });
   }
 });
@@ -46,11 +49,13 @@ function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   // Load saved theme from DB on startup
   useEffect(() => {
-    apiFetch<Record<string, string>>('/settings').then(settings => {
-      if (settings?.theme === 'light' || settings?.theme === 'dark') {
-        setTheme(settings.theme as Theme);
-      }
-    }).catch(() => {});
+    apiFetch<Record<string, string>>('/settings')
+      .then((settings) => {
+        if (settings?.theme === 'light' || settings?.theme === 'dark') {
+          setTheme(settings.theme as Theme);
+        }
+      })
+      .catch(() => {});
   }, [setTheme]);
 
   // Listen for theme changes from Electron menu

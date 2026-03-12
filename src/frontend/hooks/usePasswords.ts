@@ -113,7 +113,10 @@ export function useCreatePassword() {
 export function useUpdatePassword() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, ...data }: { id: number } & Partial<{
+    mutationFn: ({
+      id,
+      ...data
+    }: { id: number } & Partial<{
       label: string;
       domain: string;
       username: string;
@@ -136,7 +139,8 @@ export function useDeletePassword() {
 export function useBulkDeletePasswords() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (ids: number[]) => apiFetch('/passwords/bulk-delete', { method: 'POST', body: JSON.stringify({ ids }) }),
+    mutationFn: (ids: number[]) =>
+      apiFetch('/passwords/bulk-delete', { method: 'POST', body: JSON.stringify({ ids }) }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['passwords', 'list'] }),
   });
 }
@@ -159,13 +163,15 @@ export function useParseImport() {
 export function useConfirmImport() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (entries: Array<{
-      label: string;
-      domain?: string;
-      username?: string;
-      password: string;
-      category?: string;
-    }>) => apiFetch('/passwords/import/confirm', { method: 'POST', body: JSON.stringify({ entries }) }),
+    mutationFn: (
+      entries: Array<{
+        label: string;
+        domain?: string;
+        username?: string;
+        password: string;
+        category?: string;
+      }>,
+    ) => apiFetch('/passwords/import/confirm', { method: 'POST', body: JSON.stringify({ entries }) }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['passwords', 'list'] });
     },

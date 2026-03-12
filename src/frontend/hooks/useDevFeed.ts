@@ -82,7 +82,7 @@ export function useDevFeed() {
       // Fetch from backend (which calls external APIs)
       try {
         const result = await apiFetch<{ hnStories: HnStory[]; trendingRepos: GitHubRepo[] }>('/external/dev-feed');
-        
+
         setData({
           hnStories: result.hnStories || [],
           trendingRepos: result.trendingRepos || [],
@@ -119,7 +119,7 @@ export function useDevFeed() {
         // Ignore
       }
 
-      setData(prev => ({ ...prev, isLoading: false, error: 'Unable to load feed' }));
+      setData((prev) => ({ ...prev, isLoading: false, error: 'Unable to load feed' }));
     };
 
     fetchData();

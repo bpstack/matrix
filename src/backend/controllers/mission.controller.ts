@@ -23,9 +23,12 @@ const deleteSchema = z.object({
 
 function taskProgress(status: string): number {
   switch (status) {
-    case 'done': return 100;
-    case 'in_progress': return 50;
-    default: return 0;
+    case 'done':
+      return 100;
+    case 'in_progress':
+      return 50;
+    default:
+      return 0;
   }
 }
 
@@ -36,23 +39,23 @@ function avgProgress(values: number[]): number {
 
 function calcPlanProgress(planId: number): number {
   const planTasks = tasksRepo.findByPlanId(planId);
-  return avgProgress(planTasks.map(t => taskProgress(t.status)));
+  return avgProgress(planTasks.map((t) => taskProgress(t.status)));
 }
 
 function calcObjectiveProgress(objectiveId: number): number {
   const objPlans = plansRepo.findByObjectiveId(objectiveId);
-  return avgProgress(objPlans.map(p => calcPlanProgress(p.id)));
+  return avgProgress(objPlans.map((p) => calcPlanProgress(p.id)));
 }
 
 function calcMissionProgress(missionId: number): number {
   const objs = objectivesRepo.findByMissionId(missionId);
-  return avgProgress(objs.map(o => calcObjectiveProgress(o.id)));
+  return avgProgress(objs.map((o) => calcObjectiveProgress(o.id)));
 }
 
 export const missionController = {
   getAll(_req: Request, res: Response) {
     const missions = missionRepo.findAll();
-    const result = missions.map(m => ({ ...m, progress: calcMissionProgress(m.id) }));
+    const result = missions.map((m) => ({ ...m, progress: calcMissionProgress(m.id) }));
     res.json(result);
   },
 

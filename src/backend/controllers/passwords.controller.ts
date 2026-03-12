@@ -1,10 +1,20 @@
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response } from 'express';
 import { z } from 'zod';
 import { passwordsRepo, NewPassword } from '../repositories/passwords.repository';
 import { settingsRepo } from '../repositories/settings.repository';
 import { activityRepo } from '../repositories/activity.repository';
-import { deriveAuthHash, verifyAuthHash, generateEncSalt, deriveEncryptionKey, encrypt, decrypt, isEncrypted, generateSecurePassword, isLegacyAuth } from '../engines/crypto';
-import { parseImportContent, ParsedEntry } from '../engines/import-parser';
+import {
+  deriveAuthHash,
+  verifyAuthHash,
+  generateEncSalt,
+  deriveEncryptionKey,
+  encrypt,
+  decrypt,
+  isEncrypted,
+  generateSecurePassword,
+  isLegacyAuth,
+} from '../engines/crypto';
+import { parseImportContent } from '../engines/import-parser';
 
 let encryptionKey: Buffer | null = null;
 let inactivityTimer: ReturnType<typeof setTimeout> | null = null;
@@ -70,11 +80,19 @@ function parseId(req: Request, res: Response): number | null {
 function decryptNotes(notes: string | null | undefined, key: Buffer): string {
   if (!notes) return '';
   if (isEncrypted(notes)) {
-    try { return decrypt(notes, key); } catch { return notes; }
+    try {
+      return decrypt(notes, key);
+    } catch {
+      return notes;
+    }
   }
   // Legacy: try decrypt if it looks like old format (iv:tag:ct), otherwise plaintext
   if (notes.split(':').length >= 3) {
-    try { return decrypt(notes, key); } catch { return notes; }
+    try {
+      return decrypt(notes, key);
+    } catch {
+      return notes;
+    }
   }
   return notes;
 }
@@ -100,14 +118,16 @@ const createSchema = z.object({
 const updateSchema = createSchema.partial();
 
 const importConfirmSchema = z.object({
-  entries: z.array(z.object({
-    label: z.string().min(1),
-    domain: z.string().optional(),
-    username: z.string().optional(),
-    password: z.string().min(1),
-    category: z.enum(['email', 'social', 'dev', 'finance', 'gaming', 'work', 'other']).default('other'),
-    notes: z.string().optional(),
-  })),
+  entries: z.array(
+    z.object({
+      label: z.string().min(1),
+      domain: z.string().optional(),
+      username: z.string().optional(),
+      password: z.string().min(1),
+      category: z.enum(['email', 'social', 'dev', 'finance', 'gaming', 'work', 'other']).default('other'),
+      notes: z.string().optional(),
+    }),
+  ),
 });
 
 const changeMasterSchema = z.object({
@@ -208,7 +228,7 @@ export const passwordsController = {
         if (b.favorite !== a.favorite) return b.favorite - a.favorite;
         return a.label.localeCompare(b.label);
       })
-      .map(p => ({
+      .map((p) => ({
         id: p.id,
         label: p.label,
         domain: p.domain,
@@ -530,7 +550,7 @@ export const passwordsController = {
     const newEncSalt = generateEncSalt();
     const newEncryptionKey = deriveEncryptionKey(newPassword, newEncSalt);
 
-    const rekeyUpdates = decryptedEntries.map(entry => ({
+    const rekeyUpdates = decryptedEntries.map((entry) => ({
       id: entry.id,
       encryptedPassword: encrypt(entry.password, newEncryptionKey),
       notes: entry.notes ? encrypt(entry.notes, newEncryptionKey) : undefined,

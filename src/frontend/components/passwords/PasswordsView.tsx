@@ -1,5 +1,20 @@
 import { useState, useEffect, useRef } from 'react';
-import { usePasswordStatus, usePasswords, usePasswordById, useSetupMaster, useUnlockVault, useLockVault, useCreatePassword, useUpdatePassword, useDeletePassword, useBulkDeletePasswords, useToggleFavorite, useParseImport, useConfirmImport, PasswordEntry, ParseResult } from '../../hooks/usePasswords';
+import {
+  usePasswordStatus,
+  usePasswords,
+  usePasswordById,
+  useSetupMaster,
+  useUnlockVault,
+  useLockVault,
+  useCreatePassword,
+  useUpdatePassword,
+  useDeletePassword,
+  useBulkDeletePasswords,
+  useToggleFavorite,
+  useParseImport,
+  useConfirmImport,
+  ParseResult,
+} from '../../hooks/usePasswords';
 import { apiFetch } from '../../lib/api';
 import { t } from '../../lib/i18n';
 import { Dropdown } from '../ui/Dropdown';
@@ -17,14 +32,16 @@ const CATEGORY_LABELS: Record<string, { en: string; es: string }> = {
 const CATEGORIES = ['email', 'social', 'dev', 'finance', 'gaming', 'work', 'other'];
 
 // Consistent button styles matching the rest of the app
-const BTN_PRIMARY = 'px-3 py-1 text-sm bg-matrix-accent/10 text-matrix-accent border border-matrix-accent/30 rounded hover:bg-matrix-accent/20 transition-colors disabled:opacity-40';
-const BTN_SECONDARY = 'px-3 py-1 text-sm text-gray-400 border border-matrix-border rounded hover:bg-matrix-border/50 transition-colors';
-const BTN_PRIMARY_WIDE = 'w-full py-2 text-sm bg-matrix-accent/10 text-matrix-accent border border-matrix-accent/30 rounded hover:bg-matrix-accent/20 transition-colors font-medium disabled:opacity-40 disabled:cursor-not-allowed';
+const BTN_PRIMARY =
+  'px-3 py-1 text-sm bg-matrix-accent/10 text-matrix-accent border border-matrix-accent/30 rounded hover:bg-matrix-accent/20 transition-colors disabled:opacity-40';
+const BTN_SECONDARY =
+  'px-3 py-1 text-sm text-gray-400 border border-matrix-border rounded hover:bg-matrix-border/50 transition-colors';
+const BTN_PRIMARY_WIDE =
+  'w-full py-2 text-sm bg-matrix-accent/10 text-matrix-accent border border-matrix-accent/30 rounded hover:bg-matrix-accent/20 transition-colors font-medium disabled:opacity-40 disabled:cursor-not-allowed';
 
 function getCategoryLabel(cat: string): string {
   return CATEGORY_LABELS[cat]?.en || cat;
 }
-
 
 function SetupScreen({ onComplete }: { onComplete: () => void }) {
   const setup = useSetupMaster();
@@ -56,13 +73,14 @@ function SetupScreen({ onComplete }: { onComplete: () => void }) {
             <input
               type="password"
               value={password}
-              onChange={e => setPassword(e.target.value)}
+              onChange={(e) => setPassword(e.target.value)}
               className="w-full bg-matrix-bg border border-matrix-border rounded px-3 py-1.5 text-sm text-gray-200 focus:outline-none focus:border-matrix-accent/50"
               placeholder="••••••••"
             />
             {password && (
               <div className="mt-2 h-1 rounded bg-matrix-border overflow-hidden">
-                <div className={`h-full transition-all ${strength === 'red' ? 'bg-red-500' : strength === 'yellow' ? 'bg-yellow-500' : 'bg-green-500'}`}
+                <div
+                  className={`h-full transition-all ${strength === 'red' ? 'bg-red-500' : strength === 'yellow' ? 'bg-yellow-500' : 'bg-green-500'}`}
                   style={{ width: password.length < 8 ? '25%' : password.length < 12 ? '60%' : '100%' }}
                 />
               </div>
@@ -73,7 +91,7 @@ function SetupScreen({ onComplete }: { onComplete: () => void }) {
             <input
               type="password"
               value={confirm}
-              onChange={e => setConfirm(e.target.value)}
+              onChange={(e) => setConfirm(e.target.value)}
               className="w-full bg-matrix-bg border border-matrix-border rounded px-3 py-1.5 text-sm text-gray-200 focus:outline-none focus:border-matrix-accent/50"
               placeholder="••••••••"
             />
@@ -114,7 +132,7 @@ function LockScreen({ onUnlock }: { onUnlock: () => void }) {
           <input
             type="password"
             value={password}
-            onChange={e => setPassword(e.target.value)}
+            onChange={(e) => setPassword(e.target.value)}
             className="w-full bg-matrix-bg border border-matrix-border rounded px-3 py-1.5 text-sm text-gray-200 focus:outline-none focus:border-matrix-accent/50"
             placeholder={t('masterPassword')}
             autoFocus
@@ -141,7 +159,7 @@ function ImportModal({ onClose }: { onClose: () => void }) {
     const content = await window.matrix.selectImportFile();
     if (!content) return;
     setStep('parsing');
-    const res = await parseImport.mutateAsync(content) as ParseResult;
+    const res = (await parseImport.mutateAsync(content)) as ParseResult;
     setResult(res);
     setSelected(new Set(res.parsed.map((_, i) => i)));
     setStep('preview');
@@ -150,12 +168,14 @@ function ImportModal({ onClose }: { onClose: () => void }) {
   const handleConfirm = async () => {
     if (!result) return;
     const entries = result.parsed.filter((_, i) => selected.has(i));
-    const res = await confirmImport.mutateAsync(entries.map(e => ({
-      label: e.label,
-      domain: e.domain,
-      username: e.username,
-      password: e.password,
-    }))) as { inserted: number; skippedDuplicates: number };
+    const res = (await confirmImport.mutateAsync(
+      entries.map((e) => ({
+        label: e.label,
+        domain: e.domain,
+        username: e.username,
+        password: e.password,
+      })),
+    )) as { inserted: number; skippedDuplicates: number };
     setImported(res);
     setStep('confirm');
   };
@@ -177,8 +197,12 @@ function ImportModal({ onClose }: { onClose: () => void }) {
             <h3 className="text-sm font-semibold text-gray-200 mb-4">{t('importPasswords')}</h3>
             <p className="text-xs text-matrix-muted mb-4">{t('importNote')}</p>
             <div className="flex gap-2">
-              <button onClick={handleSelect} className={BTN_PRIMARY}>📁 {t('selectFile')}</button>
-              <button onClick={onClose} className={BTN_SECONDARY}>{t('cancel')}</button>
+              <button onClick={handleSelect} className={BTN_PRIMARY}>
+                📁 {t('selectFile')}
+              </button>
+              <button onClick={onClose} className={BTN_SECONDARY}>
+                {t('cancel')}
+              </button>
             </div>
           </>
         )}
@@ -195,8 +219,12 @@ function ImportModal({ onClose }: { onClose: () => void }) {
               {result.parsed.length} {t('linesMatched')} · {result.unmatched.length} {t('linesUnmatched')}
             </p>
             <div className="flex gap-2 mb-4">
-              <button onClick={() => toggleAll(true)} className="text-xs text-matrix-accent hover:underline">{t('selectAll')}</button>
-              <button onClick={() => toggleAll(false)} className="text-xs text-matrix-muted hover:underline">{t('selectNone')}</button>
+              <button onClick={() => toggleAll(true)} className="text-xs text-matrix-accent hover:underline">
+                {t('selectAll')}
+              </button>
+              <button onClick={() => toggleAll(false)} className="text-xs text-matrix-muted hover:underline">
+                {t('selectNone')}
+              </button>
             </div>
             <div className="max-h-64 overflow-auto border border-matrix-border rounded">
               <table className="w-full text-xs">
@@ -216,7 +244,7 @@ function ImportModal({ onClose }: { onClose: () => void }) {
                         <input
                           type="checkbox"
                           checked={selected.has(i)}
-                          onChange={e => {
+                          onChange={(e) => {
                             const next = new Set(selected);
                             e.target.checked ? next.add(i) : next.delete(i);
                             setSelected(next);
@@ -228,8 +256,14 @@ function ImportModal({ onClose }: { onClose: () => void }) {
                       <td className="p-2 text-gray-400">{entry.domain || '-'}</td>
                       <td className="p-2 text-gray-400">{entry.username || '-'}</td>
                       <td className="p-2">
-                        <span className={`text-xs ${entry.confidence === 'high' ? 'text-green-400' : entry.confidence === 'medium' ? 'text-yellow-400' : 'text-red-400'}`}>
-                          {entry.confidence === 'high' ? t('confidenceHigh') : entry.confidence === 'medium' ? t('confidenceMedium') : t('confidenceLow')}
+                        <span
+                          className={`text-xs ${entry.confidence === 'high' ? 'text-green-400' : entry.confidence === 'medium' ? 'text-yellow-400' : 'text-red-400'}`}
+                        >
+                          {entry.confidence === 'high'
+                            ? t('confidenceHigh')
+                            : entry.confidence === 'medium'
+                              ? t('confidenceMedium')
+                              : t('confidenceLow')}
                         </span>
                       </td>
                     </tr>
@@ -238,10 +272,16 @@ function ImportModal({ onClose }: { onClose: () => void }) {
               </table>
             </div>
             <div className="flex gap-2 mt-4">
-              <button onClick={handleConfirm} disabled={selected.size === 0 || confirmImport.isPending} className={BTN_PRIMARY}>
+              <button
+                onClick={handleConfirm}
+                disabled={selected.size === 0 || confirmImport.isPending}
+                className={BTN_PRIMARY}
+              >
                 {t('confirmImport')} ({selected.size})
               </button>
-              <button onClick={onClose} className={BTN_SECONDARY}>{t('cancel')}</button>
+              <button onClick={onClose} className={BTN_SECONDARY}>
+                {t('cancel')}
+              </button>
             </div>
           </>
         )}
@@ -301,7 +341,8 @@ function EditModal({ entryId, onClose }: { entryId: number | null; onClose: () =
     }
   };
 
-  const inputClass = 'w-full bg-matrix-bg border border-matrix-border rounded px-3 py-1.5 text-sm text-gray-200 focus:outline-none focus:border-matrix-accent/50';
+  const inputClass =
+    'w-full bg-matrix-bg border border-matrix-border rounded px-3 py-1.5 text-sm text-gray-200 focus:outline-none focus:border-matrix-accent/50';
 
   if (isEditing && isLoading) {
     return (
@@ -316,8 +357,12 @@ function EditModal({ entryId, onClose }: { entryId: number | null; onClose: () =
       <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
         <div className="bg-matrix-bg border border-matrix-border rounded-lg p-6 w-full max-w-md">
           <h3 className="text-sm font-semibold text-red-400 mb-2">Failed to decrypt entry</h3>
-          <p className="text-xs text-gray-400 mb-4">This entry may have been encrypted with a different master password or the data is corrupted.</p>
-          <button onClick={onClose} className={BTN_SECONDARY}>{t('cancel')}</button>
+          <p className="text-xs text-gray-400 mb-4">
+            This entry may have been encrypted with a different master password or the data is corrupted.
+          </p>
+          <button onClick={onClose} className={BTN_SECONDARY}>
+            {t('cancel')}
+          </button>
         </div>
       </div>
     );
@@ -328,27 +373,66 @@ function EditModal({ entryId, onClose }: { entryId: number | null; onClose: () =
       <div className="bg-matrix-bg border border-matrix-border rounded-lg p-6 w-full max-w-md">
         <h3 className="text-sm font-semibold text-gray-200 mb-4">{isEditing ? t('editPassword') : t('newPassword')}</h3>
         <form onSubmit={handleSubmit} className="space-y-3">
-          <input value={label} onChange={e => setLabel(e.target.value)} placeholder={t('label')} className={inputClass} required />
-          <input value={domain} onChange={e => setDomain(e.target.value)} placeholder={t('domain')} className={inputClass} />
-          <input value={username} onChange={e => setUsername(e.target.value)} placeholder={t('username')} className={inputClass} />
+          <input
+            value={label}
+            onChange={(e) => setLabel(e.target.value)}
+            placeholder={t('label')}
+            className={inputClass}
+            required
+          />
+          <input
+            value={domain}
+            onChange={(e) => setDomain(e.target.value)}
+            placeholder={t('domain')}
+            className={inputClass}
+          />
+          <input
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            placeholder={t('username')}
+            className={inputClass}
+          />
           <div className="flex gap-2">
-            <input value={password} onChange={e => setPassword(e.target.value)} type={showPassword ? 'text' : 'password'} placeholder={t('password')} className={`flex-1 ${inputClass}`} required />
-            <button type="button" onClick={() => setShowPassword(!showPassword)} className="text-xs text-gray-400 hover:text-gray-200 px-2">
+            <input
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              type={showPassword ? 'text' : 'password'}
+              placeholder={t('password')}
+              className={`flex-1 ${inputClass}`}
+              required
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="text-xs text-gray-400 hover:text-gray-200 px-2"
+            >
               {showPassword ? t('hidePassword') : t('showPassword')}
             </button>
           </div>
           <Dropdown
             value={category}
             onChange={setCategory}
-            options={CATEGORIES.map(c => ({ value: c, label: getCategoryLabel(c) }))}
+            options={CATEGORIES.map((c) => ({ value: c, label: getCategoryLabel(c) }))}
           />
-          <textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder={t('notes')} rows={3} className={`${inputClass} resize-none`} />
+          <textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder={t('notes')}
+            rows={3}
+            className={`${inputClass} resize-none`}
+          />
           {error && <p className="text-xs text-red-400">{error}</p>}
           <div className="flex gap-2">
-            <button type="submit" disabled={create.isPending || update.isPending} className={`flex-1 ${BTN_PRIMARY_WIDE}`}>
+            <button
+              type="submit"
+              disabled={create.isPending || update.isPending}
+              className={`flex-1 ${BTN_PRIMARY_WIDE}`}
+            >
               {t('save')}
             </button>
-            <button type="button" onClick={onClose} className={BTN_SECONDARY}>{t('cancel')}</button>
+            <button type="button" onClick={onClose} className={BTN_SECONDARY}>
+              {t('cancel')}
+            </button>
           </div>
         </form>
       </div>
@@ -385,21 +469,25 @@ export default function PasswordsView() {
   const isSetup = status?.isSetup ?? false;
   const isUnlocked = status?.isUnlocked ?? false;
 
-  const filtered = passwords?.filter(p => {
+  const filtered = passwords?.filter((p) => {
     if (category !== 'all' && p.category !== category) return false;
     if (search) {
       const s = search.toLowerCase();
-      return p.label.toLowerCase().includes(s) || p.domain?.toLowerCase().includes(s) || p.username?.toLowerCase().includes(s);
+      return (
+        p.label.toLowerCase().includes(s) ||
+        p.domain?.toLowerCase().includes(s) ||
+        p.username?.toLowerCase().includes(s)
+      );
     }
     return true;
   });
 
-  const allFilteredIds = filtered?.map(p => p.id) ?? [];
-  const allSelected = allFilteredIds.length > 0 && allFilteredIds.every(id => selectedIds.has(id));
+  const allFilteredIds = filtered?.map((p) => p.id) ?? [];
+  const allSelected = allFilteredIds.length > 0 && allFilteredIds.every((id) => selectedIds.has(id));
   const someSelected = selectedIds.size > 0;
 
   const toggleSelect = (id: number) => {
-    setSelectedIds(prev => {
+    setSelectedIds((prev) => {
       const next = new Set(prev);
       next.has(id) ? next.delete(id) : next.add(id);
       return next;
@@ -477,16 +565,22 @@ export default function PasswordsView() {
       <div className="flex items-center justify-between mb-4 gap-2">
         <h1 className="text-lg font-semibold text-gray-200 shrink-0">{t('vault')}</h1>
         <div className="flex gap-2">
-          <button onClick={handleLock} className={BTN_SECONDARY}>🔒 <span className="hidden sm:inline">{t('lock')}</span></button>
-          <button onClick={() => setEditTarget('new')} className={BTN_PRIMARY}>+ <span className="hidden sm:inline">{t('newPassword')}</span></button>
-          <button onClick={() => setShowImport(true)} className={BTN_SECONDARY}>↑ <span className="hidden sm:inline">{t('import')}</span></button>
+          <button onClick={handleLock} className={BTN_SECONDARY}>
+            🔒 <span className="hidden sm:inline">{t('lock')}</span>
+          </button>
+          <button onClick={() => setEditTarget('new')} className={BTN_PRIMARY}>
+            + <span className="hidden sm:inline">{t('newPassword')}</span>
+          </button>
+          <button onClick={() => setShowImport(true)} className={BTN_SECONDARY}>
+            ↑ <span className="hidden sm:inline">{t('import')}</span>
+          </button>
         </div>
       </div>
 
       <div className="flex gap-2 mb-4">
         <input
           value={search}
-          onChange={e => setSearch(e.target.value)}
+          onChange={(e) => setSearch(e.target.value)}
           placeholder={`🔍 ${t('search')}...`}
           className="flex-1 min-w-0 bg-matrix-bg border border-matrix-border rounded px-3 py-1.5 text-sm text-gray-200 placeholder-matrix-muted focus:outline-none focus:border-matrix-accent/50"
         />
@@ -495,7 +589,7 @@ export default function PasswordsView() {
           onChange={setCategory}
           options={[
             { value: 'all', label: t('allCategories') },
-            ...CATEGORIES.map(c => ({ value: c, label: getCategoryLabel(c) })),
+            ...CATEGORIES.map((c) => ({ value: c, label: getCategoryLabel(c) })),
           ]}
         />
       </div>
@@ -503,10 +597,17 @@ export default function PasswordsView() {
       {someSelected && (
         <div className="flex items-center gap-3 mb-3 px-3 py-2 bg-matrix-border/30 border border-matrix-border rounded text-xs">
           <span className="text-gray-300">{selectedIds.size} selected</span>
-          <button onClick={handleBulkDelete} disabled={bulkDelete.isPending} className="text-red-400 hover:text-red-300 transition-colors disabled:opacity-40">
+          <button
+            onClick={handleBulkDelete}
+            disabled={bulkDelete.isPending}
+            className="text-red-400 hover:text-red-300 transition-colors disabled:opacity-40"
+          >
             🗑 Delete selected
           </button>
-          <button onClick={() => setSelectedIds(new Set())} className="text-gray-400 hover:text-gray-200 transition-colors">
+          <button
+            onClick={() => setSelectedIds(new Set())}
+            className="text-gray-400 hover:text-gray-200 transition-colors"
+          >
             Clear
           </button>
         </div>
@@ -519,30 +620,61 @@ export default function PasswordsView() {
               <th className="p-2.5 w-8">
                 <input type="checkbox" checked={allSelected} onChange={toggleSelectAll} className="matrix-checkbox" />
               </th>
-              <th className="p-2.5 w-8 hidden md:table-cell text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">★</th>
-              <th className="p-2.5 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">{t('label')}</th>
-              <th className="p-2.5 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">{t('domain')}</th>
-              <th className="p-2.5 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider hidden xl:table-cell">{t('username')}</th>
-              <th className="p-2.5 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell w-24">{t('password')}</th>
-              <th className="p-2.5 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell w-20">{t('category')}</th>
+              <th className="p-2.5 w-8 hidden md:table-cell text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
+                ★
+              </th>
+              <th className="p-2.5 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider">
+                {t('label')}
+              </th>
+              <th className="p-2.5 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">
+                {t('domain')}
+              </th>
+              <th className="p-2.5 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider hidden xl:table-cell">
+                {t('username')}
+              </th>
+              <th className="p-2.5 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell w-24">
+                {t('password')}
+              </th>
+              <th className="p-2.5 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell w-20">
+                {t('category')}
+              </th>
               <th className="p-2.5 w-28 sm:w-36"></th>
             </tr>
           </thead>
           <tbody>
-            {filtered?.map(p => (
-              <tr key={p.id} className={`border-t border-matrix-border hover:bg-matrix-border/20 ${selectedIds.has(p.id) ? 'bg-matrix-accent/5' : ''}`}>
+            {filtered?.map((p) => (
+              <tr
+                key={p.id}
+                className={`border-t border-matrix-border hover:bg-matrix-border/20 ${selectedIds.has(p.id) ? 'bg-matrix-accent/5' : ''}`}
+              >
                 <td className="p-2.5">
-                  <input type="checkbox" checked={selectedIds.has(p.id)} onChange={() => toggleSelect(p.id)} className="matrix-checkbox" />
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.has(p.id)}
+                    onChange={() => toggleSelect(p.id)}
+                    className="matrix-checkbox"
+                  />
                 </td>
                 <td className="p-2.5 hidden md:table-cell">
-                  <button onClick={() => toggleFav.mutate(p.id)} className={`text-sm ${p.favorite ? 'text-yellow-400' : 'text-gray-600 hover:text-gray-400'}`}>★</button>
+                  <button
+                    onClick={() => toggleFav.mutate(p.id)}
+                    className={`text-sm ${p.favorite ? 'text-yellow-400' : 'text-gray-600 hover:text-gray-400'}`}
+                  >
+                    ★
+                  </button>
                 </td>
                 <td className="p-2.5 text-sm text-gray-200 truncate max-w-0">
                   <span className="truncate block">{p.label}</span>
-                  <span className="text-[10px] text-gray-500 truncate block lg:hidden">{p.domain || ''}{p.domain && p.username ? ' · ' : ''}{p.username || ''}</span>
+                  <span className="text-[10px] text-gray-500 truncate block lg:hidden">
+                    {p.domain || ''}
+                    {p.domain && p.username ? ' · ' : ''}
+                    {p.username || ''}
+                  </span>
                 </td>
                 <td className="p-2.5 text-xs text-gray-400 truncate max-w-0 hidden lg:table-cell">{p.domain || '-'}</td>
-                <td className="p-2.5 text-xs text-gray-400 truncate max-w-0 hidden xl:table-cell">{p.username || '-'}</td>
+                <td className="p-2.5 text-xs text-gray-400 truncate max-w-0 hidden xl:table-cell">
+                  {p.username || '-'}
+                </td>
                 <td className="p-2.5 hidden sm:table-cell">
                   {revealError === p.id ? (
                     <span className="text-xs text-red-400">error</span>
@@ -555,32 +687,70 @@ export default function PasswordsView() {
                 <td className="p-2.5 text-xs text-gray-500 hidden lg:table-cell">{getCategoryLabel(p.category)}</td>
                 <td className="p-2.5">
                   <div className="flex gap-0.5 justify-end">
-                    <button onClick={() => handleReveal(p.id)} className="p-1 text-gray-500 hover:text-gray-200 text-sm" title={t('showPassword')}>👁</button>
-                    <button onClick={() => handleCopy(p.id)} className="p-1 text-gray-500 hover:text-gray-200 text-sm" title={t('copyPassword')}>
+                    <button
+                      onClick={() => handleReveal(p.id)}
+                      className="p-1 text-gray-500 hover:text-gray-200 text-sm"
+                      title={t('showPassword')}
+                    >
+                      👁
+                    </button>
+                    <button
+                      onClick={() => handleCopy(p.id)}
+                      className="p-1 text-gray-500 hover:text-gray-200 text-sm"
+                      title={t('copyPassword')}
+                    >
                       {copied === p.id ? <span className="text-green-400 text-xs">✓</span> : '📋'}
                     </button>
-                    <button onClick={() => setEditTarget(p.id)} className="p-1 text-gray-500 hover:text-gray-200 text-sm" title={t('edit')}>✏️</button>
-                    <button onClick={() => { if (confirm(t('confirmDelete'))) deletePwd.mutate(p.id); }} className="p-1 text-gray-500 hover:text-red-400 text-sm" title={t('delete')}>🗑</button>
+                    <button
+                      onClick={() => setEditTarget(p.id)}
+                      className="p-1 text-gray-500 hover:text-gray-200 text-sm"
+                      title={t('edit')}
+                    >
+                      ✏️
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (confirm(t('confirmDelete'))) deletePwd.mutate(p.id);
+                      }}
+                      className="p-1 text-gray-500 hover:text-red-400 text-sm"
+                      title={t('delete')}
+                    >
+                      🗑
+                    </button>
                   </div>
                 </td>
               </tr>
             ))}
             {(!filtered || filtered.length === 0) && (
               <tr>
-                <td colSpan={8} className="p-8 text-center text-xs text-gray-500">{t('noPasswords')}</td>
+                <td colSpan={8} className="p-8 text-center text-xs text-gray-500">
+                  {t('noPasswords')}
+                </td>
               </tr>
             )}
           </tbody>
         </table>
       </div>
 
-      <p className="mt-2 text-[10px] text-matrix-muted">{passwords?.length || 0} {t('passwordsCount')}</p>
+      <p className="mt-2 text-[10px] text-matrix-muted">
+        {passwords?.length || 0} {t('passwordsCount')}
+      </p>
 
-      {showImport && <ImportModal onClose={() => { setShowImport(false); refetchList(); }} />}
+      {showImport && (
+        <ImportModal
+          onClose={() => {
+            setShowImport(false);
+            refetchList();
+          }}
+        />
+      )}
       {editTarget !== false && (
         <EditModal
           entryId={editTarget === 'new' ? null : editTarget}
-          onClose={() => { setEditTarget(false); refetchList(); }}
+          onClose={() => {
+            setEditTarget(false);
+            refetchList();
+          }}
         />
       )}
     </div>

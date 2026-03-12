@@ -42,13 +42,13 @@ export function useDailyQuote() {
         // Ignore parse errors
       }
     }
-    
+
     // Always try to fetch fresh quote from backend first
     try {
       const data = await apiFetch<DailyQuote>('/external/daily-quote');
       setQuote(data);
       setIsLoading(false);
-      
+
       // Cache in localStorage
       try {
         localStorage.setItem('dailyQuote', JSON.stringify({ ...data, date: getTodayKey() }));
@@ -59,7 +59,7 @@ export function useDailyQuote() {
     } catch {
       // Fall through to cache or fallback
     }
-    
+
     // Use fallback
     const fallback = getFallbackQuote();
     setQuote(fallback);

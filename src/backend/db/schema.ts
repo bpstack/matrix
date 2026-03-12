@@ -61,7 +61,9 @@ export const projects = sqliteTable('projects', {
 
 export const projectScans = sqliteTable('project_scans', {
   id: integer('id').primaryKey({ autoIncrement: true }),
-  projectId: integer('project_id').notNull().references(() => projects.id),
+  projectId: integer('project_id')
+    .notNull()
+    .references(() => projects.id),
   totalTasks: integer('total_tasks').notNull().default(0),
   completedTasks: integer('completed_tasks').notNull().default(0),
   blockers: integer('blockers').notNull().default(0),
@@ -73,7 +75,9 @@ export const projectScans = sqliteTable('project_scans', {
 
 export const projectLinks = sqliteTable('project_links', {
   id: integer('id').primaryKey({ autoIncrement: true }),
-  projectId: integer('project_id').notNull().references(() => projects.id),
+  projectId: integer('project_id')
+    .notNull()
+    .references(() => projects.id),
   linkableType: text('linkable_type').notNull(),
   linkableId: integer('linkable_id').notNull(),
   createdAt: text('created_at').notNull(),

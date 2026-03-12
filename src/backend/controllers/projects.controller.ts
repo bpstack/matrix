@@ -25,7 +25,7 @@ const updateSchema = z.object({
 export const projectsController = {
   getAll(_req: Request, res: Response) {
     const all = projectsRepo.findAll();
-    const result = all.map(p => ({
+    const result = all.map((p) => ({
       ...p,
       tags: p.tags ? JSON.parse(p.tags) : [],
       techStats: p.techStats ? JSON.parse(p.techStats) : null,

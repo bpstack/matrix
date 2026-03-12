@@ -38,7 +38,7 @@ function parseCSVLine(line: string): string[] {
   const result: string[] = [];
   let current = '';
   let inQuotes = false;
-  
+
   for (let i = 0; i < line.length; i++) {
     const char = line[i];
     if (char === '"') {
@@ -61,8 +61,8 @@ function parseCSVLine(line: string): string[] {
 
 function detectCSVHeaders(headers: string[]): Record<string, string> {
   const headerMap: Record<string, string> = {};
-  const normalized = headers.map(h => h.toLowerCase().trim());
-  
+  const normalized = headers.map((h) => h.toLowerCase().trim());
+
   const mappings: Record<string, string[]> = {
     label: ['name', 'title', 'label', 'entry', 'site', 'service'],
     domain: ['url', 'website', 'login_uri', 'uri', 'link'],
@@ -70,16 +70,16 @@ function detectCSVHeaders(headers: string[]): Record<string, string> {
     password: ['password', 'pass', 'pwd', 'secret'],
     notes: ['notes', 'extra', 'note', 'comment', 'comments'],
   };
-  
+
   for (const [field, variants] of Object.entries(mappings)) {
     for (let i = 0; i < normalized.length; i++) {
-      if (variants.some(v => normalized[i].includes(v))) {
+      if (variants.some((v) => normalized[i].includes(v))) {
         headerMap[field] = headers[i];
         break;
       }
     }
   }
-  
+
   return headerMap;
 }
 
@@ -98,38 +98,40 @@ function extractHostname(url: string): string {
 }
 
 export function parseImportContent(content: string): ParseResult {
-  const lines = content.split(/\r?\n/).filter(l => l.trim());
+  const lines = content.split(/\r?\n/).filter((l) => l.trim());
   if (lines.length === 0) {
     return { parsed: [], unmatched: [], format: 'txt' };
   }
 
   const firstLine = lines[0];
-  const csvHeaders = firstLine.split(',').map(h => h.trim().toLowerCase());
-  const hasPasswordCol = csvHeaders.some(h => 
-    ['password', 'pass', 'pwd', 'secret'].some(p => h.includes(p))
-  );
+  const csvHeaders = firstLine.split(',').map((h) => h.trim().toLowerCase());
+  const hasPasswordCol = csvHeaders.some((h) => ['password', 'pass', 'pwd', 'secret'].some((p) => h.includes(p)));
 
   if (hasPasswordCol || (firstLine.includes(',') && lines.length > 1)) {
     return parseCSV(content);
   }
-  
+
   return parseTXT(content);
 }
 
 function parseCSV(content: string): ParseResult {
-  const lines = content.split(/\r?\n/).filter(l => l.trim());
+  const lines = content.split(/\r?\n/).filter((l) => l.trim());
   if (lines.length < 2) {
-    return { parsed: [], unmatched: [{ lineNumber: 1, raw: lines[0] || '', reason: 'No data rows found' }], format: 'csv' };
+    return {
+      parsed: [],
+      unmatched: [{ lineNumber: 1, raw: lines[0] || '', reason: 'No data rows found' }],
+      format: 'csv',
+    };
   }
 
   const headers = parseCSVLine(lines[0]);
   const headerMap = detectCSVHeaders(headers);
-  
+
   if (!headerMap.password) {
-    return { 
-      parsed: [], 
-      unmatched: lines.map((raw, i) => ({ lineNumber: i + 1, raw, reason: 'No password column detected' })), 
-      format: 'csv' 
+    return {
+      parsed: [],
+      unmatched: lines.map((raw, i) => ({ lineNumber: i + 1, raw, reason: 'No password column detected' })),
+      format: 'csv',
     };
   }
 
@@ -145,7 +147,7 @@ function parseCSV(content: string): ParseResult {
   for (let i = 1; i < lines.length; i++) {
     const cols = parseCSVLine(lines[i]);
     const password = cols[passwordIdx]?.trim();
-    
+
     if (!password) {
       unmatched.push({ lineNumber: i + 1, raw: lines[i], reason: 'Empty password' });
       continue;
@@ -153,9 +155,7 @@ function parseCSV(content: string): ParseResult {
 
     const domain = domainIdx >= 0 ? extractHostname(cols[domainIdx] || '') : undefined;
     const username = usernameIdx >= 0 ? cols[usernameIdx]?.trim() : undefined;
-    const label = labelIdx >= 0 && cols[labelIdx]?.trim() 
-      ? cols[labelIdx].trim() 
-      : domain || username || 'Imported';
+    const label = labelIdx >= 0 && cols[labelIdx]?.trim() ? cols[labelIdx].trim() : domain || username || 'Imported';
 
     parsed.push({
       lineNumber: i + 1,
@@ -173,19 +173,19 @@ function parseCSV(content: string): ParseResult {
 }
 
 function parseTXT(content: string): ParseResult {
-  const lines = content.split(/\r?\n/).filter(l => l.trim());
+  const lines = content.split(/\r?\n/).filter((l) => l.trim());
   const parsed: ParsedEntry[] = [];
   const unmatched: UnmatchedLine[] = [];
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
     const lineNum = i + 1;
-    
+
     if (!line) continue;
 
     const colonParts = line.split(':');
     const pipeParts = line.split('|');
-    
+
     if (colonParts.length >= 2) {
       const result = parseColonFormat(colonParts, line, lineNum);
       if (result) {
@@ -193,7 +193,7 @@ function parseTXT(content: string): ParseResult {
         continue;
       }
     }
-    
+
     if (pipeParts.length >= 2) {
       const result = parsePipeFormat(pipeParts, line, lineNum);
       if (result) {
@@ -207,7 +207,7 @@ function parseTXT(content: string): ParseResult {
       if (spaceParts.length >= 2) {
         const first = spaceParts[0];
         const rest = spaceParts.slice(1).join(' ');
-        
+
         if (isEmail(first) || isDomain(first)) {
           parsed.push({
             lineNumber: lineNum,
@@ -248,60 +248,88 @@ function parseColonFormat(parts: string[], raw: string, lineNum: number): Parsed
   if (parts.length === 2) {
     const [first, second] = parts;
     if (isEmail(first)) {
-      return { lineNumber: lineNum, raw, label: second.length < 30 ? second : 'Imported', username: first, password: second, confidence: 'high' };
+      return {
+        lineNumber: lineNum,
+        raw,
+        label: second.length < 30 ? second : 'Imported',
+        username: first,
+        password: second,
+        confidence: 'high',
+      };
     }
     if (isDomain(first)) {
-      return { lineNumber: lineNum, raw, label: second.length < 30 ? second : 'Imported', domain: first, password: second, confidence: 'high' };
+      return {
+        lineNumber: lineNum,
+        raw,
+        label: second.length < 30 ? second : 'Imported',
+        domain: first,
+        password: second,
+        confidence: 'high',
+      };
     }
     return { lineNumber: lineNum, raw, label: first, password: second, confidence: 'medium' };
   }
-  
+
   if (parts.length >= 3) {
     const first = parts[0];
     const second = parts[1];
     const rest = parts.slice(2).join(':');
-    
+
     return {
       lineNumber: lineNum,
       raw,
       label: isDomain(first) || isEmail(first) ? rest : first,
       domain: isDomain(first) ? first : undefined,
-      username: isEmail(first) ? first : (isDomain(first) ? undefined : second),
+      username: isEmail(first) ? first : isDomain(first) ? undefined : second,
       password: isDomain(first) || isEmail(first) ? second : rest,
       confidence: 'high',
     };
   }
-  
+
   return null;
 }
 
 function parsePipeFormat(parts: string[], raw: string, lineNum: number): ParsedEntry | null {
   if (parts.length === 2) {
-    const [first, second] = parts.map(p => p.trim());
+    const [first, second] = parts.map((p) => p.trim());
     if (isEmail(first)) {
-      return { lineNumber: lineNum, raw, label: second.length < 30 ? second : 'Imported', username: first, password: second, confidence: 'high' };
+      return {
+        lineNumber: lineNum,
+        raw,
+        label: second.length < 30 ? second : 'Imported',
+        username: first,
+        password: second,
+        confidence: 'high',
+      };
     }
     if (isDomain(first)) {
-      return { lineNumber: lineNum, raw, label: second.length < 30 ? second : 'Imported', domain: first, password: second, confidence: 'high' };
+      return {
+        lineNumber: lineNum,
+        raw,
+        label: second.length < 30 ? second : 'Imported',
+        domain: first,
+        password: second,
+        confidence: 'high',
+      };
     }
     return { lineNumber: lineNum, raw, label: first, password: second, confidence: 'medium' };
   }
-  
+
   if (parts.length >= 3) {
     const first = parts[0].trim();
     const second = parts[1].trim();
     const rest = parts.slice(2).join('|').trim();
-    
+
     return {
       lineNumber: lineNum,
       raw,
       label: isDomain(first) || isEmail(first) ? rest : first,
       domain: isDomain(first) ? first : undefined,
-      username: isEmail(first) ? first : (isDomain(first) ? undefined : second),
+      username: isEmail(first) ? first : isDomain(first) ? undefined : second,
       password: isDomain(first) || isEmail(first) ? second : rest,
       confidence: 'high',
     };
   }
-  
+
   return null;
 }

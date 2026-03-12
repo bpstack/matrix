@@ -28,9 +28,12 @@ const deleteSchema = z.object({
 
 function taskProgress(status: string): number {
   switch (status) {
-    case 'done': return 100;
-    case 'in_progress': return 50;
-    default: return 0;
+    case 'done':
+      return 100;
+    case 'in_progress':
+      return 50;
+    default:
+      return 0;
   }
 }
 
@@ -44,7 +47,7 @@ export const plansController = {
   getAll(req: Request, res: Response) {
     const objectiveId = req.query.objective_id ? Number(req.query.objective_id) : undefined;
     const result = objectiveId ? plansRepo.findByObjectiveId(objectiveId) : plansRepo.findAll();
-    res.json(result.map(p => ({ ...p, progress: calcPlanProgress(p.id) })));
+    res.json(result.map((p) => ({ ...p, progress: calcPlanProgress(p.id) })));
   },
 
   getById(req: Request, res: Response) {
@@ -78,11 +81,16 @@ export const plansController = {
     if (children.length > 0) {
       const parsed = deleteSchema.safeParse(req.body);
       if (!parsed.success || !parsed.data.action) {
-        return res.status(400).json({ error: 'Plan has tasks. Provide action: "reassign" with newParentId or "cascade".' });
+        return res
+          .status(400)
+          .json({ error: 'Plan has tasks. Provide action: "reassign" with newParentId or "cascade".' });
       }
       if (parsed.data.action === 'reassign') {
         if (!parsed.data.newParentId) return res.status(400).json({ error: 'newParentId required for reassign' });
-        tasksRepo.reassignToPlan(children.map(c => c.id), parsed.data.newParentId);
+        tasksRepo.reassignToPlan(
+          children.map((c) => c.id),
+          parsed.data.newParentId,
+        );
       } else {
         for (const task of children) tasksRepo.delete(task.id);
       }

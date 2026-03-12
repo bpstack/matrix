@@ -102,7 +102,12 @@ export const externalController = {
         const stories = await Promise.allSettled(storyPromises);
 
         result.hnStories = stories
-          .filter((s): s is PromiseFulfilledResult<{ id: number; title: string; url?: string; time: number; score: number }> => s.status === 'fulfilled' && Boolean(s.value?.title))
+          .filter(
+            (
+              s,
+            ): s is PromiseFulfilledResult<{ id: number; title: string; url?: string; time: number; score: number }> =>
+              s.status === 'fulfilled' && Boolean(s.value?.title),
+          )
           .map((s) => ({
             id: s.value.id,
             title: s.value.title,
@@ -131,7 +136,7 @@ export const externalController = {
       );
 
       if (ghResponse.ok) {
-        const json = await ghResponse.json() as { items?: GitHubRepo[] };
+        const json = (await ghResponse.json()) as { items?: GitHubRepo[] };
         result.trendingRepos = (json.items || []).slice(0, 10).map((r) => ({
           id: r.id,
           name: r.name,

@@ -31,9 +31,7 @@ export function AppShell() {
         return (
           <div className="flex items-center justify-center h-full text-matrix-muted">
             <div className="text-center">
-              <h2 className="text-2xl font-semibold text-gray-300 mb-2 capitalize">
-                {t(activeTab, language)}
-              </h2>
+              <h2 className="text-2xl font-semibold text-gray-300 mb-2 capitalize">{t(activeTab, language)}</h2>
               <p className="text-sm">{t('selectTab', language)}</p>
             </div>
           </div>

@@ -38,8 +38,16 @@ export function useCreatePlan() {
 export function useUpdatePlan() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, ...data }: { id: number; title?: string; description?: string; status?: string; deadline?: string }) =>
-      apiFetch(`/plans/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    mutationFn: ({
+      id,
+      ...data
+    }: {
+      id: number;
+      title?: string;
+      description?: string;
+      status?: string;
+      deadline?: string;
+    }) => apiFetch(`/plans/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['plans'] });
       qc.invalidateQueries({ queryKey: ['objectives'] });

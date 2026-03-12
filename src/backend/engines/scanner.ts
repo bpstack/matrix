@@ -3,16 +3,40 @@ import path from 'node:path';
 import { execSync } from 'node:child_process';
 
 const TARGET_FILES = [
-  'roadmap.md', 'plan.md', 'todo.md', 'guia.md', 'guide.md', 'readme.md', 'changelog.md',
-  'ROADMAP.md', 'PLAN.md', 'TODO.md', 'GUIA.md', 'GUIDE.md', 'README.md', 'CHANGELOG.md',
+  'roadmap.md',
+  'plan.md',
+  'todo.md',
+  'guia.md',
+  'guide.md',
+  'readme.md',
+  'changelog.md',
+  'ROADMAP.md',
+  'PLAN.md',
+  'TODO.md',
+  'GUIA.md',
+  'GUIDE.md',
+  'README.md',
+  'CHANGELOG.md',
 ];
 
 const GUIDE_FILES = ['guia.md', 'guide.md', 'GUIA.md', 'GUIDE.md'];
 
 const IGNORE_DIRS = new Set([
-  'node_modules', '.git', 'dist', 'build', '.next', '.nuxt', 'out',
-  'coverage', '.cache', '.vite', '__pycache__', 'target', 'vendor',
-  '.turbo', '.output',
+  'node_modules',
+  '.git',
+  'dist',
+  'build',
+  '.next',
+  '.nuxt',
+  'out',
+  'coverage',
+  '.cache',
+  '.vite',
+  '__pycache__',
+  'target',
+  'vendor',
+  '.turbo',
+  '.output',
 ]);
 
 const LANG_MAP: Record<string, { name: string; color: string }> = {
@@ -86,9 +110,9 @@ export function scanProject(projectPath: string): ScanResult {
 
   for (const filename of TARGET_FILES) {
     const lowerName = filename.toLowerCase();
-    if (rawData.some(r => r.file.toLowerCase() === lowerName)) continue;
+    if (rawData.some((r) => r.file.toLowerCase() === lowerName)) continue;
 
-    const isGuide = GUIDE_FILES.some(g => g.toLowerCase() === lowerName);
+    const isGuide = GUIDE_FILES.some((g) => g.toLowerCase() === lowerName);
     const isTodo = lowerName === 'todo.md';
 
     let filePath = path.join(projectPath, filename);
@@ -219,7 +243,7 @@ export function collectTechStats(projectPath: string): TechStats {
   // Merge duplicates (e.g. .ts and .tsx both = TypeScript)
   const merged: typeof languages = [];
   for (const lang of languages) {
-    const existing = merged.find(l => l.name === lang.name);
+    const existing = merged.find((l) => l.name === lang.name);
     if (existing) {
       existing.lines += lang.lines;
       existing.percent = totalLines > 0 ? Math.round((existing.lines / totalLines) * 100) : 0;
@@ -230,14 +254,18 @@ export function collectTechStats(projectPath: string): TechStats {
   merged.sort((a, b) => b.lines - a.lines);
 
   // Detect tests
-  const hasTests = checkExists(projectPath, [
-    'test', 'tests', '__tests__', 'spec', 'specs',
-  ]) || hasFilePattern(projectPath, /\.(test|spec)\./);
+  const hasTests =
+    checkExists(projectPath, ['test', 'tests', '__tests__', 'spec', 'specs']) ||
+    hasFilePattern(projectPath, /\.(test|spec)\./);
 
   // Detect CI/CD
   const hasCiCd = checkExists(projectPath, [
-    '.github/workflows', '.gitlab-ci.yml', '.circleci', 'Jenkinsfile',
-    '.travis.yml', 'azure-pipelines.yml',
+    '.github/workflows',
+    '.gitlab-ci.yml',
+    '.circleci',
+    'Jenkinsfile',
+    '.travis.yml',
+    'azure-pipelines.yml',
   ]);
 
   // Count dependencies
@@ -261,7 +289,7 @@ export function collectTechStats(projectPath: string): TechStats {
 }
 
 function checkExists(base: string, paths: string[]): boolean {
-  return paths.some(p => fs.existsSync(path.join(base, p)));
+  return paths.some((p) => fs.existsSync(path.join(base, p)));
 }
 
 function hasFilePattern(dir: string, pattern: RegExp, depth = 2): boolean {
@@ -309,15 +337,22 @@ function countDependencies(projectPath: string): number {
       const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
       count += Object.keys(pkg.dependencies || {}).length;
       count += Object.keys(pkg.devDependencies || {}).length;
-    } catch { /* skip */ }
+    } catch {
+      /* skip */
+    }
   }
 
   const reqPath = findFileRecursive(projectPath, 'requirements.txt');
   if (reqPath && fs.existsSync(reqPath)) {
     try {
-      const lines = fs.readFileSync(reqPath, 'utf-8').split('\n').filter(l => l.trim() && !l.startsWith('#'));
+      const lines = fs
+        .readFileSync(reqPath, 'utf-8')
+        .split('\n')
+        .filter((l) => l.trim() && !l.startsWith('#'));
       count += lines.length;
-    } catch { /* skip */ }
+    } catch {
+      /* skip */
+    }
   }
   // Cargo.toml
   const cargoPath = findFileRecursive(projectPath, 'Cargo.toml');
@@ -326,9 +361,11 @@ function countDependencies(projectPath: string): number {
       const content = fs.readFileSync(cargoPath, 'utf-8');
       const depSection = content.match(/\[dependencies\]([\s\S]*?)(\[|$)/);
       if (depSection) {
-        count += depSection[1].split('\n').filter(l => l.trim() && !l.startsWith('#')).length;
+        count += depSection[1].split('\n').filter((l) => l.trim() && !l.startsWith('#')).length;
       }
-    } catch { /* skip */ }
+    } catch {
+      /* skip */
+    }
   }
   return count;
 }

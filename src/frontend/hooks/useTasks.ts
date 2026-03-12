@@ -29,8 +29,14 @@ export function useTasks(filters?: { planId?: number; status?: string }) {
 export function useCreateTask() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: { planId: number; title: string; description?: string; status?: string; priority?: string; deadline?: string }) =>
-      apiFetch('/tasks', { method: 'POST', body: JSON.stringify(data) }),
+    mutationFn: (data: {
+      planId: number;
+      title: string;
+      description?: string;
+      status?: string;
+      priority?: string;
+      deadline?: string;
+    }) => apiFetch('/tasks', { method: 'POST', body: JSON.stringify(data) }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['tasks'] });
       qc.invalidateQueries({ queryKey: ['plans'] });
@@ -43,8 +49,18 @@ export function useCreateTask() {
 export function useUpdateTask() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, ...data }: { id: number; title?: string; description?: string; status?: string; priority?: string; deadline?: string; sortOrder?: number }) =>
-      apiFetch(`/tasks/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    mutationFn: ({
+      id,
+      ...data
+    }: {
+      id: number;
+      title?: string;
+      description?: string;
+      status?: string;
+      priority?: string;
+      deadline?: string;
+      sortOrder?: number;
+    }) => apiFetch(`/tasks/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['tasks'] });
       qc.invalidateQueries({ queryKey: ['plans'] });
@@ -57,8 +73,7 @@ export function useUpdateTask() {
 export function useDeleteTask() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: number) =>
-      apiFetch(`/tasks/${id}`, { method: 'DELETE' }),
+    mutationFn: (id: number) => apiFetch(`/tasks/${id}`, { method: 'DELETE' }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['tasks'] });
       qc.invalidateQueries({ queryKey: ['plans'] });

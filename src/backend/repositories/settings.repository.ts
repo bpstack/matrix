@@ -21,17 +21,8 @@ export const settingsRepo = {
   upsert(key: string, value: string) {
     const existing = getDb().select().from(settings).where(eq(settings.key, key)).get();
     if (existing) {
-      return getDb()
-        .update(settings)
-        .set({ value, updatedAt: now() })
-        .where(eq(settings.key, key))
-        .returning()
-        .get();
+      return getDb().update(settings).set({ value, updatedAt: now() }).where(eq(settings.key, key)).returning().get();
     }
-    return getDb()
-      .insert(settings)
-      .values({ key, value, updatedAt: now() })
-      .returning()
-      .get();
+    return getDb().insert(settings).values({ key, value, updatedAt: now() }).returning().get();
   },
 };

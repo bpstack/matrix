@@ -30,7 +30,10 @@ export const objectivesRepo = {
       .get();
   },
 
-  update(id: number, data: Partial<{ title: string; description: string; status: string; sortOrder: number; missionId: number }>) {
+  update(
+    id: number,
+    data: Partial<{ title: string; description: string; status: string; sortOrder: number; missionId: number }>,
+  ) {
     return getDb()
       .update(objectives)
       .set({ ...data, updatedAt: now() })

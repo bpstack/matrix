@@ -71,7 +71,11 @@ export function runMigrations() {
     created_at TEXT NOT NULL
   )`);
 
-  db.run(sql.raw(`CREATE UNIQUE INDEX IF NOT EXISTS idx_project_links_unique ON project_links(project_id, linkable_type, linkable_id)`));
+  db.run(
+    sql.raw(
+      `CREATE UNIQUE INDEX IF NOT EXISTS idx_project_links_unique ON project_links(project_id, linkable_type, linkable_id)`,
+    ),
+  );
 
   db.run(sql`CREATE TABLE IF NOT EXISTS ideas (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -85,9 +89,21 @@ export function runMigrations() {
   )`);
 
   // Add new columns to projects if missing (migration from Phase 1 → Phase 2)
-  try { db.run(sql.raw(`ALTER TABLE projects ADD COLUMN url TEXT`)); } catch { /* already exists */ }
-  try { db.run(sql.raw(`ALTER TABLE projects ADD COLUMN tags TEXT`)); } catch { /* already exists */ }
-  try { db.run(sql.raw(`ALTER TABLE projects ADD COLUMN tech_stats TEXT`)); } catch { /* already exists */ }
+  try {
+    db.run(sql.raw(`ALTER TABLE projects ADD COLUMN url TEXT`));
+  } catch {
+    /* already exists */
+  }
+  try {
+    db.run(sql.raw(`ALTER TABLE projects ADD COLUMN tags TEXT`));
+  } catch {
+    /* already exists */
+  }
+  try {
+    db.run(sql.raw(`ALTER TABLE projects ADD COLUMN tech_stats TEXT`));
+  } catch {
+    /* already exists */
+  }
 
   db.run(sql`CREATE TABLE IF NOT EXISTS project_scans (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -102,9 +118,21 @@ export function runMigrations() {
   )`);
 
   // Phase 3: Add new columns to ideas
-  try { db.run(sql.raw(`ALTER TABLE ideas ADD COLUMN target_type TEXT`)); } catch { /* already exists */ }
-  try { db.run(sql.raw(`ALTER TABLE ideas ADD COLUMN target_id INTEGER`)); } catch { /* already exists */ }
-  try { db.run(sql.raw(`ALTER TABLE ideas ADD COLUMN project_id INTEGER`)); } catch { /* already exists */ }
+  try {
+    db.run(sql.raw(`ALTER TABLE ideas ADD COLUMN target_type TEXT`));
+  } catch {
+    /* already exists */
+  }
+  try {
+    db.run(sql.raw(`ALTER TABLE ideas ADD COLUMN target_id INTEGER`));
+  } catch {
+    /* already exists */
+  }
+  try {
+    db.run(sql.raw(`ALTER TABLE ideas ADD COLUMN project_id INTEGER`));
+  } catch {
+    /* already exists */
+  }
 
   db.run(sql`CREATE TABLE IF NOT EXISTS idea_evaluations (
     id INTEGER PRIMARY KEY AUTOINCREMENT,

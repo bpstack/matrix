@@ -21,13 +21,8 @@ export function Sidebar() {
       }`}
     >
       <div className="flex items-center justify-between h-10 px-3 border-b border-matrix-border">
-        {!sidebarCollapsed && (
-          <span className="text-matrix-accent font-semibold text-sm tracking-wide">MATRIX</span>
-        )}
-        <button
-          onClick={toggleSidebar}
-          className="text-matrix-muted hover:text-gray-300 transition-colors text-xs"
-        >
+        {!sidebarCollapsed && <span className="text-matrix-accent font-semibold text-sm tracking-wide">MATRIX</span>}
+        <button onClick={toggleSidebar} className="text-matrix-muted hover:text-gray-300 transition-colors text-xs">
           {sidebarCollapsed ? '→' : '←'}
         </button>
       </div>

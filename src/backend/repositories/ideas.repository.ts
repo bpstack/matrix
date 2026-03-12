@@ -25,7 +25,19 @@ export const ideasRepo = {
       .get();
   },
 
-  update(id: number, data: Partial<{ title: string; description: string; status: string; targetType: string | null; targetId: number | null; projectId: number | null; promotedToType: string; promotedToId: number }>) {
+  update(
+    id: number,
+    data: Partial<{
+      title: string;
+      description: string;
+      status: string;
+      targetType: string | null;
+      targetId: number | null;
+      projectId: number | null;
+      promotedToType: string;
+      promotedToId: number;
+    }>,
+  ) {
     return getDb()
       .update(ideas)
       .set({ ...data, updatedAt: now() })
@@ -44,7 +56,17 @@ export const ideasRepo = {
     return getDb().select().from(ideaEvaluations).where(eq(ideaEvaluations.ideaId, ideaId)).get();
   },
 
-  upsertEvaluation(ideaId: number, data: { alignmentScore: number; impactScore: number; costScore: number; riskScore: number; totalScore: number; reasoning?: string }) {
+  upsertEvaluation(
+    ideaId: number,
+    data: {
+      alignmentScore: number;
+      impactScore: number;
+      costScore: number;
+      riskScore: number;
+      totalScore: number;
+      reasoning?: string;
+    },
+  ) {
     const existing = this.findEvaluation(ideaId);
     if (existing) {
       return getDb()

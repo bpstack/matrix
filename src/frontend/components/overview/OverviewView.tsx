@@ -1,9 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
 import { useMission, useCreateMission, useUpdateMission, useDeleteMission } from '../../hooks/useMission';
-import { useObjectives, useCreateObjective, useUpdateObjective, useDeleteObjective, Objective } from '../../hooks/useObjectives';
+import {
+  useObjectives,
+  useCreateObjective,
+  useUpdateObjective,
+  useDeleteObjective,
+  Objective,
+} from '../../hooks/useObjectives';
 import { usePlans, useCreatePlan, useUpdatePlan, useDeletePlan } from '../../hooks/usePlans';
-import { useTasks, useCreateTask, useUpdateTask, useDeleteTask, Task } from '../../hooks/useTasks';
+import { useTasks, useCreateTask, useUpdateTask, useDeleteTask } from '../../hooks/useTasks';
 import { useProjects, Project } from '../../hooks/useProjects';
 import { useIdeas, useCreateIdea } from '../../hooks/useIdeas';
 import { useStats } from '../../hooks/useStats';
@@ -51,20 +57,6 @@ function SectionCard({ title, icon, children }: { title: string; icon: string; c
       </div>
       {children}
     </div>
-  );
-}
-
-function ComingSoonCard({ title, icon, description }: { title: string; icon: string; description: string }) {
-  return (
-    <SectionCard title={title} icon={icon}>
-      <div className="flex flex-col items-center justify-center py-6 text-matrix-muted">
-        <span className="text-xl mb-2 opacity-20">{icon}</span>
-        <p className="text-xs">{description}</p>
-        <span className="mt-1.5 text-xs px-2 py-0.5 bg-matrix-border/50 text-matrix-muted rounded-full">
-          Coming soon
-        </span>
-      </div>
-    </SectionCard>
   );
 }
 
@@ -237,29 +229,29 @@ function StrategicSchemaSetup() {
   const saveAll = async () => {
     setSaving(true);
     try {
-      const missionRes = await createMission.mutateAsync({
+      const missionRes = (await createMission.mutateAsync({
         title: missionTitle.trim(),
         description: missionDesc.trim() || undefined,
-      }) as MissionResponse;
+      })) as MissionResponse;
       const missionId = missionRes.id;
       for (let oi = 0; oi < objectiveInputs.length; oi++) {
         const obj = objectiveInputs[oi];
         if (!obj.title.trim()) continue;
-        const objRes = await createObjective.mutateAsync({
+        const objRes = (await createObjective.mutateAsync({
           missionId,
           title: obj.title.trim(),
           description: obj.description.trim() || undefined,
-        }) as ObjectiveResponse;
+        })) as ObjectiveResponse;
         const objId = objRes.id;
         const objPlans = planInputs[oi] || [];
         for (let pi = 0; pi < objPlans.length; pi++) {
           const plan = objPlans[pi];
           if (!plan.title.trim()) continue;
-          const planRes = await createPlan.mutateAsync({
+          const planRes = (await createPlan.mutateAsync({
             objectiveId: objId,
             title: plan.title.trim(),
             description: plan.description.trim() || undefined,
-          }) as PlanResponse;
+          })) as PlanResponse;
           const planId = planRes.id;
           const key = `${oi}-${pi}`;
           const planTasks = taskInputs[key] || [];
