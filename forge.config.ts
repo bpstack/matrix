@@ -37,7 +37,7 @@ const config: ForgeConfig = {
   rebuildConfig: {},
   hooks: {
     postPackage: async (_config, options) => {
-      // Copy native modules into resources/node_modules/ so Node resolution works
+      const { execSync } = require('child_process');
       const nativeModules = ['better-sqlite3', 'bindings', 'file-uri-to-path'];
       const projectRoot = process.cwd();
 
@@ -52,8 +52,20 @@ const config: ForgeConfig = {
             copyDirSync(src, dest);
           }
         }
+
+        // Rebuild better-sqlite3 for Electron's Node version
+        const betterSqlitePath = path.join(nmDest, 'better-sqlite3');
+        if (fs.existsSync(betterSqlitePath)) {
+          const electronPath = path.join(projectRoot, 'node_modules', 'electron', 'dist', 'electron.exe');
+          const electronVersion = execSync(`"${electronPath}" --version`, { encoding: 'utf-8' }).trim().replace(/^v/, '');
+          console.log(`[Matrix] Rebuilding better-sqlite3 for Electron ${electronVersion}...`);
+          execSync(
+            `npx --yes @electron/rebuild --force --only better-sqlite3 --module-dir "${betterSqlitePath}" --electron-version ${electronVersion}`,
+            { cwd: projectRoot, stdio: 'inherit' }
+          );
+        }
       }
-      console.log('[Matrix] Native modules copied to resources/node_modules/');
+      console.log('[Matrix] Native modules copied and rebuilt for Electron.');
     },
   },
   makers: [

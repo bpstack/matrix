@@ -228,11 +228,15 @@ app.on('ready', () => {
   buildMenu();
 
   if (app.isPackaged) {
-    updateElectronApp({
-      repo: 'bpstack/matrix',
-      logger: console,
-    });
-    setupAutoUpdaterListeners();
+    try {
+      updateElectronApp({
+        repo: 'bpstack/matrix',
+        logger: console,
+      });
+      setupAutoUpdaterListeners();
+    } catch (err) {
+      logger.error('main', 'Auto-updater failed to initialize', { error: String(err) });
+    }
   }
 
   ipcMain.handle('get-logs', () => logger.getContent());
