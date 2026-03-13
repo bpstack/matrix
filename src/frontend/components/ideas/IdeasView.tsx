@@ -36,7 +36,7 @@ const scoreLabels = {
 } as const;
 
 export function IdeasView() {
-  const { language } = useUiStore();
+  const { language, quickCreateModal, closeQuickCreate } = useUiStore();
   const { data: ideas = [], isLoading } = useIdeas();
   const { data: objectivesList = [] } = useObjectives();
   const { data: plansList = [] } = usePlans();
@@ -48,6 +48,13 @@ export function IdeasView() {
   const evaluateIdea = useEvaluateIdea();
   const decideIdea = useDecideIdea();
   const promoteIdea = usePromoteIdea();
+
+  useEffect(() => {
+    if (quickCreateModal.type === 'idea') {
+      setShowCreate(true);
+      closeQuickCreate();
+    }
+  }, [quickCreateModal, closeQuickCreate]);
 
   const [showCreate, setShowCreate] = useState(false);
   const [newTitle, setNewTitle] = useState('');

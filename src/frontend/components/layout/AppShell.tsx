@@ -9,9 +9,14 @@ import { ProjectsView } from '../projects/ProjectsView';
 import { IdeasView } from '../ideas/IdeasView';
 import PasswordsView from '../passwords/PasswordsView';
 import { RightPanel } from './RightPanel';
+import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts';
+import { ToastContainer } from '../ui/ToastContainer';
+import { DeadlineBanner } from './DeadlineBanner';
 
 export function AppShell() {
   const { activeTab, language } = useUiStore();
+
+  useKeyboardShortcuts();
 
   const renderContent = () => {
     switch (activeTab) {
@@ -40,10 +45,14 @@ export function AppShell() {
   };
 
   return (
-    <div className="flex h-screen bg-matrix-bg text-gray-200">
-      <Sidebar />
-      <main className="flex-1 overflow-auto">{renderContent()}</main>
-      <RightPanel activeTab={activeTab} />
+    <div className="flex flex-col h-screen bg-matrix-bg text-gray-200">
+      <DeadlineBanner />
+      <div className="flex flex-1 overflow-hidden">
+        <Sidebar />
+        <main className="flex-1 overflow-auto">{renderContent()}</main>
+        <RightPanel activeTab={activeTab} />
+      </div>
+      <ToastContainer />
     </div>
   );
 }

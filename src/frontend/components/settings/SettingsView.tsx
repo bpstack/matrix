@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useUpdateSetting } from '../../hooks/useSettings';
 import { usePasswordStatus, useChangeMasterPassword, useUnlockVault, useLockVault } from '../../hooks/usePasswords';
 import { useUiStore, Theme } from '../../stores/ui.store';
@@ -8,6 +8,13 @@ import { apiFetch } from '../../lib/api';
 export function SettingsView() {
   const { language, setLanguage, theme, setTheme } = useUiStore();
   const updateSetting = useUpdateSetting();
+  const [logContent, setLogContent] = useState('');
+  const [logPath, setLogPath] = useState('');
+
+  useEffect(() => {
+    window.matrix.getLogs().then(setLogContent);
+    window.matrix.getLogPath().then(setLogPath);
+  }, []);
 
   const { data: passwordStatus, refetch: refetchPwdStatus } = usePasswordStatus();
   const changeMasterPwd = useChangeMasterPassword();
@@ -28,9 +35,9 @@ export function SettingsView() {
     updateSetting.mutate({ key: 'language', value: lang });
   };
 
-  const handleThemeChange = (t: Theme) => {
-    setTheme(t);
-    updateSetting.mutate({ key: 'theme', value: t });
+  const handleThemeChange = (newTheme: Theme) => {
+    setTheme(newTheme);
+    updateSetting.mutate({ key: 'theme', value: newTheme });
   };
 
   const handleUnlock = async () => {
@@ -119,6 +126,28 @@ export function SettingsView() {
                 <span>{icon}</span>
                 {language === 'es' ? es : en}
               </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="border border-matrix-border rounded-md p-3">
+          <p className="text-xs text-matrix-muted mb-2">Keyboard Shortcuts</p>
+          <div className="space-y-1 text-xs">
+            {[
+              ['Ctrl+1', 'Overview'],
+              ['Ctrl+2', 'Projects'],
+              ['Ctrl+3', 'Tasks'],
+              ['Ctrl+4', 'Ideas'],
+              ['Ctrl+5', 'Passwords'],
+              ['Ctrl+,', 'Settings'],
+              ['Ctrl+T', 'Quick Task'],
+              ['Ctrl+I', 'Quick Idea'],
+              ['Ctrl+B', 'Toggle Sidebar'],
+            ].map(([key, action]) => (
+              <div key={key} className="flex justify-between">
+                <kbd className="px-1.5 py-0.5 bg-matrix-bg rounded text-gray-400 font-mono">{key}</kbd>
+                <span className="text-gray-500">{action}</span>
+              </div>
             ))}
           </div>
         </div>
@@ -251,6 +280,25 @@ export function SettingsView() {
           >
             {language === 'es' ? 'Borrar base de datos' : 'Reset Database'}
           </button>
+        </div>
+
+        <div className="border border-matrix-border rounded-md p-3">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs text-matrix-muted">Logs</p>
+            <button
+              onClick={async () => {
+                await window.matrix.clearLogs();
+                setLogContent('');
+              }}
+              className="text-xs text-gray-500 hover:text-gray-300"
+            >
+              {language === 'es' ? 'Limpiar' : 'Clear'}
+            </button>
+          </div>
+          <pre className="h-32 overflow-y-auto text-xs text-gray-500 bg-matrix-bg rounded p-2 font-mono">
+            {logContent || (language === 'es' ? 'Sin logs' : 'No logs')}
+          </pre>
+          <p className="text-xs text-matrix-muted mt-1">{logPath}</p>
         </div>
       </div>
     </div>

@@ -1,6 +1,7 @@
 import React from 'react';
 import { useUiStore, Tab } from '../../stores/ui.store';
 import { t } from '../../lib/i18n';
+import { useDeadlines } from '../../hooks/useDeadlines';
 
 const tabs: { key: Tab; icon: string }[] = [
   { key: 'overview', icon: '◈' },
@@ -13,6 +14,7 @@ const tabs: { key: Tab; icon: string }[] = [
 
 export function Sidebar() {
   const { activeTab, setActiveTab, sidebarCollapsed, toggleSidebar, language } = useUiStore();
+  const { data: deadlines } = useDeadlines();
 
   return (
     <aside
@@ -29,11 +31,12 @@ export function Sidebar() {
       <nav className="flex-1 py-1">
         {tabs.map(({ key, icon }) => {
           const isActive = activeTab === key;
+          const showBadge = key === 'tasks' && deadlines && deadlines.total > 0;
           return (
             <button
               key={key}
               onClick={() => setActiveTab(key)}
-              className={`w-full flex items-center gap-2.5 px-3 py-1.5 text-sm transition-colors ${
+              className={`w-full flex items-center gap-2.5 px-3 py-1.5 text-sm transition-colors relative ${
                 isActive
                   ? 'bg-matrix-accent/10 text-matrix-accent'
                   : 'text-matrix-muted hover:text-matrix-accent hover:bg-matrix-accent/5'
@@ -41,6 +44,11 @@ export function Sidebar() {
             >
               <span className="text-sm">{icon}</span>
               {!sidebarCollapsed && <span className="text-sm">{t(key, language)}</span>}
+              {showBadge && (
+                <span className="absolute right-2 top-1/2 -translate-y-1/2 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
+                  {deadlines.total > 9 ? '9+' : deadlines.total}
+                </span>
+              )}
             </button>
           );
         })}

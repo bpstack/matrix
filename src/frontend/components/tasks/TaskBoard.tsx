@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useTasks, useCreateTask, useUpdateTask, useDeleteTask, Task } from '../../hooks/useTasks';
 import { usePlans } from '../../hooks/usePlans';
 import { useUiStore } from '../../stores/ui.store';
@@ -22,12 +22,25 @@ const priorityDots: Record<string, string> = {
   urgent: 'bg-red-400',
 };
 
+function getDeadlineBorder(deadline: string | null | undefined, status: string): string {
+  if (status === 'done' || !deadline) return 'border-matrix-border/50';
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const d = new Date(deadline);
+  const taskDay = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  if (taskDay < today) return 'border-red-500';
+  if (taskDay.getTime() === today.getTime()) return 'border-red-400';
+  const soon = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+  if (taskDay <= soon) return 'border-amber-500';
+  return 'border-matrix-border/50';
+}
+
 function hasMultipleLines(text: string): boolean {
   return text.includes('\n') || text.length > 100;
 }
 
 export function TaskBoard() {
-  const { language } = useUiStore();
+  const { language, quickCreateModal, closeQuickCreate } = useUiStore();
   const { data: allTasks } = useTasks();
   const { data: plans } = usePlans();
   const updateTask = useUpdateTask();
@@ -50,6 +63,13 @@ export function TaskBoard() {
   const [editingTaskId, setEditingTaskId] = useState<number | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const [editDescription, setEditDescription] = useState('');
+
+  useEffect(() => {
+    if (quickCreateModal.type === 'task') {
+      setAddingTask(true);
+      closeQuickCreate();
+    }
+  }, [quickCreateModal, closeQuickCreate]);
 
   const startEdit = (task: Task) => {
     setEditingTaskId(task.id);
@@ -242,7 +262,7 @@ export function TaskBoard() {
                     key={task.id}
                     draggable={!isEditing}
                     onDragStart={(e) => !isEditing && handleDragStart(e, task.id)}
-                    className={`group bg-matrix-bg border border-matrix-border/50 rounded-md p-3 transition-colors ${isEditing ? 'ring-1 ring-matrix-accent/40' : 'cursor-move hover:border-matrix-accent/30'}`}
+                    className={`group bg-matrix-bg border-l-2 ${getDeadlineBorder(task.deadline, task.status)} rounded-md p-3 transition-colors ${isEditing ? 'ring-1 ring-matrix-accent/40' : 'cursor-move hover:border-matrix-accent/30'}`}
                   >
                     {isEditing ? (
                       <div className="space-y-1.5">
