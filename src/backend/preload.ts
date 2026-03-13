@@ -10,4 +10,7 @@ contextBridge.exposeInMainWorld('matrix', {
   openDirectory: (path: string) => ipcRenderer.invoke('open-directory', path),
   selectImportFile: () => ipcRenderer.invoke('select-import-file'),
   openExternal: (url: string) => ipcRenderer.invoke('open-external', url),
+  getLogs: () => ipcRenderer.invoke('get-logs'),
+  clearLogs: () => ipcRenderer.invoke('clear-logs'),
+  getLogPath: () => ipcRenderer.invoke('get-log-path'),
 });
