@@ -1,16 +1,4 @@
-declare global {
-  interface Window {
-    matrix: {
-      apiBase: string;
-      platform: string;
-      onThemeChange?: (callback: (theme: string) => void) => void;
-      selectDirectory: () => Promise<string | null>;
-      openDirectory: (path: string) => Promise<void>;
-      selectImportFile: () => Promise<string | null>;
-      openExternal: (url: string) => Promise<void>;
-    };
-  }
-}
+/// <reference path="../../types.d.ts" />
 
 const API_BASE = window.matrix?.apiBase ?? 'http://localhost:3939';
 
