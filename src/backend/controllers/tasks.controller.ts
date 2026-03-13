@@ -31,6 +31,45 @@ export const tasksController = {
     res.json(tasksRepo.findFiltered(filters));
   },
 
+  getDeadlines(req: Request, res: Response) {
+    const allTasks = tasksRepo.findAll();
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const soon = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+    const isValidDate = (d: string | null | undefined): d is string => {
+      if (!d) return false;
+      const date = new Date(d);
+      return !Number.isNaN(date.getTime());
+    };
+
+    const pending = allTasks.filter((t) => t.status !== 'done' && isValidDate(t.deadline));
+
+    const overdue = pending.filter((t) => {
+      const d = new Date(t.deadline!);
+      return d < today;
+    });
+
+    const dueToday = pending.filter((t) => {
+      const d = new Date(t.deadline!);
+      const taskDay = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+      return taskDay.getTime() === today.getTime();
+    });
+
+    const dueSoon = pending.filter((t) => {
+      const d = new Date(t.deadline!);
+      const taskDay = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+      return taskDay > today && taskDay <= soon;
+    });
+
+    res.json({
+      overdue,
+      dueToday,
+      dueSoon,
+      total: overdue.length + dueToday.length + dueSoon.length,
+    });
+  },
+
   getById(req: Request, res: Response) {
     const t = tasksRepo.findById(Number(req.params.id));
     if (!t) return res.status(404).json({ error: 'Task not found' });
