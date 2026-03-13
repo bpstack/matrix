@@ -56,8 +56,8 @@ const config: ForgeConfig = {
         // Rebuild better-sqlite3 for Electron's Node version
         const betterSqlitePath = path.join(nmDest, 'better-sqlite3');
         if (fs.existsSync(betterSqlitePath)) {
-          const electronPath = path.join(projectRoot, 'node_modules', 'electron', 'dist', 'electron.exe');
-          const electronVersion = execSync(`"${electronPath}" --version`, { encoding: 'utf-8' }).trim().replace(/^v/, '');
+          const electronPkg = JSON.parse(fs.readFileSync(path.join(projectRoot, 'node_modules', 'electron', 'package.json'), 'utf-8'));
+          const electronVersion = electronPkg.version;
           console.log(`[Matrix] Rebuilding better-sqlite3 for Electron ${electronVersion}...`);
           execSync(
             `npx --yes @electron/rebuild --force --only better-sqlite3 --module-dir "${betterSqlitePath}" --electron-version ${electronVersion}`,
