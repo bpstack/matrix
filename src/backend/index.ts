@@ -1,4 +1,4 @@
-import { app, BrowserWindow, session, Menu, ipcMain, dialog, shell } from 'electron';
+import { app, BrowserWindow, session, Menu, ipcMain, dialog, shell, autoUpdater } from 'electron';
 import path from 'node:path';
 import fs from 'node:fs';
 import started from 'electron-squirrel-startup';
@@ -54,6 +54,65 @@ function sendTheme(theme: string) {
   }
 }
 
+let manualUpdateCheck = false;
+
+function setupAutoUpdaterListeners(): void {
+  autoUpdater.on('update-available', () => {
+    if (manualUpdateCheck) {
+      dialog.showMessageBox({
+        type: 'info',
+        title: 'Update Available',
+        message: 'A new version is being downloaded...',
+      });
+    }
+  });
+
+  autoUpdater.on('update-not-available', () => {
+    if (manualUpdateCheck) {
+      dialog.showMessageBox({
+        type: 'info',
+        title: 'No Updates',
+        message: 'You are running the latest version.',
+      });
+      manualUpdateCheck = false;
+    }
+  });
+
+  autoUpdater.on('update-downloaded', () => {
+    manualUpdateCheck = false;
+    const choice = dialog.showMessageBoxSync({
+      type: 'question',
+      buttons: ['Restart Now', 'Later'],
+      title: 'Update Ready',
+      message: 'Update downloaded. Restart to apply?',
+    });
+    if (choice === 0) {
+      autoUpdater.quitAndInstall();
+    }
+  });
+
+  autoUpdater.on('error', (err) => {
+    if (manualUpdateCheck) {
+      dialog.showMessageBox({
+        type: 'error',
+        title: 'Update Error',
+        message: `Error checking for updates: ${err.message}`,
+      });
+      manualUpdateCheck = false;
+    }
+  });
+}
+
+function checkForUpdatesManual(): void {
+  if (!app.isPackaged) {
+    dialog.showMessageBox({ message: 'Updates only work in packaged builds.', type: 'info' });
+    return;
+  }
+
+  manualUpdateCheck = true;
+  autoUpdater.checkForUpdates();
+}
+
 function buildMenu(): void {
   const template: Electron.MenuItemConstructorOptions[] = [
     { role: 'fileMenu' },
@@ -93,6 +152,11 @@ function buildMenu(): void {
     {
       label: 'Help',
       submenu: [
+        {
+          label: 'Check for Updates...',
+          click: checkForUpdatesManual,
+        },
+        { type: 'separator' },
         {
           label: 'About Matrix',
           click: () => {
@@ -165,6 +229,7 @@ app.on('ready', () => {
       repo: 'bpstack/matrix',
       logger: console,
     });
+    setupAutoUpdaterListeners();
   }
 
   ipcMain.handle('get-logs', () => logger.getContent());

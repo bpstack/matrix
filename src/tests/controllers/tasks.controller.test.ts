@@ -1,4 +1,5 @@
 import { vi, describe, it, expect, beforeEach } from 'vitest';
+import { Request, Response } from 'express';
 
 vi.mock('../../backend/repositories/tasks.repository', () => ({
   tasksRepo: {
@@ -19,16 +20,31 @@ import { tasksController } from '../../backend/controllers/tasks.controller';
 import { tasksRepo } from '../../backend/repositories/tasks.repository';
 import { activityRepo } from '../../backend/repositories/activity.repository';
 
+interface Task {
+  id: number;
+  title: string;
+  description: string | null;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+  sortOrder: number | null;
+  deadline: string | null;
+  planId: number | null;
+  priority: string;
+  completedAt: string | null;
+}
+
 const mockReq = (opts: { body?: unknown; params?: Record<string, string>; query?: Record<string, string> } = {}) =>
-  ({ body: opts.body ?? {}, params: opts.params ?? {}, query: opts.query ?? {} }) as any;
+  ({ body: opts.body ?? {}, params: opts.params ?? {}, query: opts.query ?? {} }) as unknown as Request;
 
 const mockRes = () => {
-  const res = { status: vi.fn(), json: vi.fn(), send: vi.fn() };
-  res.status.mockReturnValue(res);
-  return res as any;
+  const res = { status: vi.fn().mockReturnThis(), json: vi.fn().mockReturnThis(), send: vi.fn().mockReturnThis() };
+  return res as unknown as Response;
 };
 
-beforeEach(() => vi.clearAllMocks());
+beforeEach(() => {
+  vi.clearAllMocks();
+});
 
 describe('tasksController', () => {
   describe('create', () => {
@@ -48,7 +64,7 @@ describe('tasksController', () => {
     });
 
     it('creates task and returns 201', () => {
-      vi.mocked(tasksRepo.create).mockReturnValue({ id: 1, title: 'Test', status: 'pending' } as any);
+      vi.mocked(tasksRepo.create).mockReturnValue({ id: 1, title: 'Test', status: 'pending' } as Task);
       const req = mockReq({ body: { planId: 1, title: 'Test' } });
       const res = mockRes();
       tasksController.create(req, res);
@@ -57,7 +73,19 @@ describe('tasksController', () => {
     });
 
     it('calls activityRepo.log after creating', () => {
-      vi.mocked(tasksRepo.create).mockReturnValue({ id: 1, title: 'Test' } as any);
+      vi.mocked(tasksRepo.create).mockReturnValue({
+        id: 1,
+        title: 'Test',
+        status: 'pending',
+        completedAt: null,
+        description: null,
+        createdAt: '',
+        updatedAt: '',
+        sortOrder: null,
+        deadline: null,
+        planId: 1,
+        priority: 'medium',
+      } as Task);
       const req = mockReq({ body: { planId: 1, title: 'Test' } });
       const res = mockRes();
       tasksController.create(req, res);
@@ -67,7 +95,7 @@ describe('tasksController', () => {
 
   describe('update', () => {
     it('returns 404 when task not found', () => {
-      vi.mocked(tasksRepo.update).mockReturnValue(undefined);
+      vi.mocked(tasksRepo.update).mockImplementation(() => undefined as unknown as Task);
       const req = mockReq({ body: {}, params: { id: '999' } });
       const res = mockRes();
       tasksController.update(req, res);
@@ -75,7 +103,19 @@ describe('tasksController', () => {
     });
 
     it('sets completedAt when status is done', () => {
-      vi.mocked(tasksRepo.update).mockReturnValue({ id: 1, title: 'Test', status: 'done' } as any);
+      vi.mocked(tasksRepo.update).mockReturnValue({
+        id: 1,
+        title: 'Test',
+        status: 'done',
+        completedAt: null,
+        description: null,
+        createdAt: '',
+        updatedAt: '',
+        sortOrder: null,
+        deadline: null,
+        planId: 1,
+        priority: 'medium',
+      } as Task);
       const req = mockReq({ body: { status: 'done' }, params: { id: '1' } });
       const res = mockRes();
       tasksController.update(req, res);
@@ -89,7 +129,14 @@ describe('tasksController', () => {
         title: 'Test',
         status: 'pending',
         completedAt: null,
-      } as any);
+        description: null,
+        createdAt: '',
+        updatedAt: '',
+        sortOrder: null,
+        deadline: null,
+        planId: 1,
+        priority: 'medium',
+      } as Task);
       const req = mockReq({ body: { status: 'pending' }, params: { id: '1' } });
       const res = mockRes();
       tasksController.update(req, res);
@@ -98,7 +145,19 @@ describe('tasksController', () => {
     });
 
     it('logs completed when status is done', () => {
-      vi.mocked(tasksRepo.update).mockReturnValue({ id: 1, title: 'Test', status: 'done' } as any);
+      vi.mocked(tasksRepo.update).mockReturnValue({
+        id: 1,
+        title: 'Test',
+        status: 'done',
+        completedAt: null,
+        description: null,
+        createdAt: '',
+        updatedAt: '',
+        sortOrder: null,
+        deadline: null,
+        planId: 1,
+        priority: 'medium',
+      } as Task);
       const req = mockReq({ body: { status: 'done' }, params: { id: '1' } });
       const res = mockRes();
       tasksController.update(req, res);
@@ -108,7 +167,7 @@ describe('tasksController', () => {
 
   describe('delete', () => {
     it('returns 404 when task not found', () => {
-      vi.mocked(tasksRepo.findById).mockReturnValue(undefined);
+      vi.mocked(tasksRepo.findById).mockImplementation(() => undefined as unknown as Task);
       const req = mockReq({ params: { id: '999' } });
       const res = mockRes();
       tasksController.delete(req, res);
@@ -117,7 +176,19 @@ describe('tasksController', () => {
     });
 
     it('deletes task and logs', () => {
-      vi.mocked(tasksRepo.findById).mockReturnValue({ id: 1, title: 'Test' } as any);
+      vi.mocked(tasksRepo.findById).mockReturnValue({
+        id: 1,
+        title: 'Test',
+        status: 'pending',
+        completedAt: null,
+        description: null,
+        createdAt: '',
+        updatedAt: '',
+        sortOrder: null,
+        deadline: null,
+        planId: 1,
+        priority: 'medium',
+      } as Task);
       const req = mockReq({ params: { id: '1' } });
       const res = mockRes();
       tasksController.delete(req, res);
@@ -129,7 +200,7 @@ describe('tasksController', () => {
 
   describe('getAll', () => {
     it('returns filtered tasks by status', () => {
-      vi.mocked(tasksRepo.findFiltered).mockReturnValue([{ id: 1, status: 'done' }] as any);
+      vi.mocked(tasksRepo.findFiltered).mockReturnValue([{ id: 1, status: 'done' }] as Task[]);
       const req = mockReq({ query: { status: 'done' } });
       const res = mockRes();
       tasksController.getAll(req, res);
@@ -138,7 +209,7 @@ describe('tasksController', () => {
     });
 
     it('returns filtered tasks by plan_id', () => {
-      vi.mocked(tasksRepo.findFiltered).mockReturnValue([] as any);
+      vi.mocked(tasksRepo.findFiltered).mockReturnValue([] as Task[]);
       const req = mockReq({ query: { plan_id: '5' } });
       const res = mockRes();
       tasksController.getAll(req, res);
@@ -148,7 +219,7 @@ describe('tasksController', () => {
 
   describe('getById', () => {
     it('returns 404 when not found', () => {
-      vi.mocked(tasksRepo.findById).mockReturnValue(undefined);
+      vi.mocked(tasksRepo.findById).mockImplementation(() => undefined as unknown as Task);
       const req = mockReq({ params: { id: '999' } });
       const res = mockRes();
       tasksController.getById(req, res);
@@ -156,7 +227,7 @@ describe('tasksController', () => {
     });
 
     it('returns task when found', () => {
-      vi.mocked(tasksRepo.findById).mockReturnValue({ id: 1, title: 'Test' } as any);
+      vi.mocked(tasksRepo.findById).mockReturnValue({ id: 1, title: 'Test' } as Task);
       const req = mockReq({ params: { id: '1' } });
       const res = mockRes();
       tasksController.getById(req, res);
