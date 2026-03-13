@@ -1,18 +1,21 @@
-import { app, BrowserWindow, session, Menu, ipcMain, dialog } from 'electron';
+import { app, BrowserWindow, session, Menu, ipcMain, dialog, shell } from 'electron';
 import path from 'node:path';
 import fs from 'node:fs';
 import started from 'electron-squirrel-startup';
+import { updateElectronApp } from 'update-electron-app';
 import { expressApp } from './server';
 import { initDb } from './db/connection';
 import { runMigrations } from './db/migrate';
 import { API_PORT } from './config/constants';
+import { logger } from './lib/logger';
 import type { Server } from 'http';
 
 process.on('uncaughtException', (err) => {
-  fs.writeFileSync(path.join(app.getPath('userData'), 'crash.log'), `${new Date().toISOString()} ${err.stack}\n`, {
-    flag: 'a',
-  });
-  console.error('[Matrix] Uncaught:', err);
+  logger.error('main', 'Uncaught exception', { stack: err.stack });
+});
+
+process.on('unhandledRejection', (reason) => {
+  logger.error('main', 'Unhandled rejection', { reason: String(reason) });
 });
 
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string | undefined;
@@ -27,12 +30,14 @@ let server: Server | null = null;
 
 function configureCSP(): void {
   session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+    const isDev = !app.isPackaged;
+    const csp = isDev
+      ? "default-src 'self' 'unsafe-inline' 'unsafe-eval'; connect-src 'self' http://localhost:* ws://localhost:* https://zenquotes.io https://hacker-news.firebaseio.com https://api.github.com; img-src 'self' data:; font-src 'self' https://fonts.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;"
+      : "default-src 'self' 'unsafe-inline'; connect-src 'self' https://zenquotes.io https://hacker-news.firebaseio.com https://api.github.com; img-src 'self' data:; font-src 'self' https://fonts.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;";
     callback({
       responseHeaders: {
         ...details.responseHeaders,
-        'Content-Security-Policy': [
-          "default-src 'self' 'unsafe-inline' 'unsafe-eval'; connect-src 'self' http://localhost:* ws://localhost:* https://zenquotes.io https://hacker-news.firebaseio.com https://api.github.com; img-src 'self' data:; font-src 'self' https://fonts.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;",
-        ],
+        'Content-Security-Policy': [csp],
       },
     });
   });
@@ -91,7 +96,6 @@ function buildMenu(): void {
         {
           label: 'About Matrix',
           click: () => {
-            const { dialog } = require('electron');
             dialog.showMessageBox({ message: 'Matrix — Strategic Personal Professional System', type: 'info' });
           },
         },
@@ -156,6 +160,17 @@ app.on('ready', () => {
   runMigrations();
   buildMenu();
 
+  if (app.isPackaged) {
+    updateElectronApp({
+      repo: 'bpstack/matrix',
+      logger: console,
+    });
+  }
+
+  ipcMain.handle('get-logs', () => logger.getContent());
+  ipcMain.handle('clear-logs', () => logger.clear());
+  ipcMain.handle('get-log-path', () => logger.getLogPath());
+
   ipcMain.handle('select-directory', async () => {
     const result = await dialog.showOpenDialog(mainWindow!, {
       properties: ['openDirectory'],
@@ -166,13 +181,11 @@ app.on('ready', () => {
 
   ipcMain.handle('open-directory', async (_event, dirPath: string) => {
     if (fs.existsSync(dirPath)) {
-      const { shell } = require('electron');
       shell.openPath(dirPath);
     }
   });
 
   ipcMain.handle('open-external', async (_event, url: string) => {
-    const { shell } = require('electron');
     shell.openExternal(url);
   });
 
