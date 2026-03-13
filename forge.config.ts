@@ -62,6 +62,8 @@ const config: ForgeConfig = {
       setupExe: 'MatrixSetup.exe',
       setupIcon: './assets/icon.ico',
       description: 'Strategic Personal Professional System',
+      authors: 'Matrix Team',
+      noMsi: true,
     }),
     new MakerZIP({}, ['darwin']),
     new MakerRpm({}),

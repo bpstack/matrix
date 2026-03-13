@@ -25,7 +25,7 @@ export default [
       '@typescript-eslint/no-explicit-any': 'warn',
 
       // General quality
-      'no-console': ['warn', { allow: ['warn', 'error'] }],
+      'no-console': ['warn', { allow: ['warn', 'error', 'info', 'log'] }],
       'prefer-const': 'error',
       'no-var': 'error',
     },
