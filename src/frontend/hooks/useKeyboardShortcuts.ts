@@ -1,67 +1,57 @@
 import { useEffect, useCallback } from 'react';
 import { useUiStore } from '../stores/ui.store';
+import { useShortcuts, parseShortcutKey } from './useShortcuts';
 
 export function useKeyboardShortcuts() {
   const { setActiveTab, toggleSidebar, openQuickCreate } = useUiStore();
+  const { shortcuts } = useShortcuts();
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
+      if (target.closest('[data-shortcut-recorder]')) return;
       const tag = target.tagName;
-      const isInputFocused = ['INPUT', 'TEXTAREA', 'SELECT'].includes(tag);
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(tag)) return;
 
-      if (isInputFocused) return;
+      for (const shortcut of shortcuts) {
+        const parsed = parseShortcutKey(shortcut.key);
+        if (!parsed) continue;
 
-      const isMac = navigator.userAgent.toUpperCase().indexOf('MAC') >= 0;
-      const modifier = isMac ? e.metaKey : e.ctrlKey;
+        const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+        const ctrlMatch = parsed.ctrl ? (isMac ? e.metaKey : e.ctrlKey) : !(isMac ? e.metaKey : e.ctrlKey);
+        const altMatch = parsed.alt ? e.altKey : !e.altKey;
+        const shiftMatch = parsed.shift ? e.shiftKey : !e.shiftKey;
+        const keyMatch = e.key.toLowerCase() === parsed.key.toLowerCase();
 
-      if (!modifier) return;
+        if (ctrlMatch && altMatch && shiftMatch && keyMatch) {
+          e.preventDefault();
 
-      switch (e.key) {
-        case '1':
-          e.preventDefault();
-          setActiveTab('overview');
-          break;
-        case '2':
-          e.preventDefault();
-          setActiveTab('projects');
-          break;
-        case '3':
-          e.preventDefault();
-          setActiveTab('tasks');
-          break;
-        case '4':
-          e.preventDefault();
-          setActiveTab('ideas');
-          break;
-        case '5':
-          e.preventDefault();
-          setActiveTab('passwords');
-          break;
-        case ',':
-          e.preventDefault();
-          setActiveTab('settings');
-          break;
-        case 'b':
-        case 'B':
-          e.preventDefault();
-          toggleSidebar();
-          break;
-        case 't':
-        case 'T':
-          e.preventDefault();
-          setActiveTab('tasks');
-          openQuickCreate('task');
-          break;
-        case 'i':
-        case 'I':
-          e.preventDefault();
-          setActiveTab('ideas');
-          openQuickCreate('idea');
-          break;
+          switch (shortcut.action) {
+            case 'overview':
+            case 'projects':
+            case 'tasks':
+            case 'ideas':
+            case 'passwords':
+            case 'settings':
+              setActiveTab(shortcut.action);
+              break;
+            case 'quickTask':
+              setActiveTab('tasks');
+              openQuickCreate('task');
+              break;
+            case 'quickIdea':
+              setActiveTab('ideas');
+              openQuickCreate('idea');
+              break;
+            case 'toggleSidebar':
+              toggleSidebar();
+              break;
+          }
+          return;
+        }
       }
     },
-    [setActiveTab, toggleSidebar, openQuickCreate],
+    [shortcuts, setActiveTab, toggleSidebar, openQuickCreate],
   );
 
   useEffect(() => {

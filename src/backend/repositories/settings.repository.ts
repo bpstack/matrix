@@ -25,4 +25,8 @@ export const settingsRepo = {
     }
     return getDb().insert(settings).values({ key, value, updatedAt: now() }).returning().get();
   },
+
+  delete(key: string) {
+    return getDb().delete(settings).where(eq(settings.key, key)).run();
+  },
 };

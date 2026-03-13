@@ -1511,7 +1511,7 @@ function ObjectivesChartCard({ language }: { language: 'en' | 'es' }) {
           <BarChart data={objData} layout="vertical" margin={{ left: 10, right: 20, top: 5, bottom: 5 }}>
             <XAxis type="number" domain={[0, 100]} tick={{ fill: '#6b7280', fontSize: 10 }} />
             <YAxis type="category" dataKey="name" width={140} tick={{ fill: '#9ca3af', fontSize: 11 }} />
-            <Tooltip content={<ChartTooltip />} />
+            <Tooltip content={<ChartTooltip />} cursor={{ fill: 'rgb(var(--matrix-border) / 0.25)' }} />
             <Bar dataKey="progress" radius={[0, 4, 4, 0]} barSize={20}>
               {objData.map((entry, i) => (
                 <Cell key={i} fill={barColor(entry.progress)} />

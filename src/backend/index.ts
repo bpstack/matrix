@@ -33,7 +33,7 @@ function configureCSP(): void {
     const isDev = !app.isPackaged;
     const csp = isDev
       ? "default-src 'self' 'unsafe-inline' 'unsafe-eval'; connect-src 'self' http://localhost:* ws://localhost:* https://zenquotes.io https://hacker-news.firebaseio.com https://api.github.com; img-src 'self' data:; font-src 'self' https://fonts.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;"
-      : "default-src 'self' 'unsafe-inline'; connect-src 'self' https://zenquotes.io https://hacker-news.firebaseio.com https://api.github.com; img-src 'self' data:; font-src 'self' https://fonts.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;";
+      : "default-src 'self' 'unsafe-inline'; connect-src 'self' http://localhost:3939 https://zenquotes.io https://hacker-news.firebaseio.com https://api.github.com; img-src 'self' data:; font-src 'self' https://fonts.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;";
     callback({
       responseHeaders: {
         ...details.responseHeaders,
@@ -160,7 +160,10 @@ function buildMenu(): void {
         {
           label: 'About Matrix',
           click: () => {
-            dialog.showMessageBox({ message: 'Matrix — Strategic Personal Professional System', type: 'info' });
+            dialog.showMessageBox({
+              message: `Matrix — Strategic Personal Professional System\n\nVersion: ${app.getVersion()}`,
+              type: 'info',
+            });
           },
         },
       ],

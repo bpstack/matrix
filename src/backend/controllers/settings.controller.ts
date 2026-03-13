@@ -23,4 +23,9 @@ export const settingsController = {
     const s = settingsRepo.upsert(req.params.key, parsed.data.value);
     res.json(s);
   },
+
+  delete(req: Request, res: Response) {
+    settingsRepo.delete(req.params.key);
+    res.json({ success: true });
+  },
 };

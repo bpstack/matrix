@@ -120,6 +120,11 @@ const dict = {
     incorrectCurrentPassword: 'Current password is incorrect',
     passwordTooShort: 'New password must be at least 8 characters',
     passwordsDoNotMatch: 'Passwords do not match',
+    keyboardShortcuts: 'Keyboard Shortcuts',
+    resetToDefaults: 'Reset to Defaults',
+    customShortcut: 'Custom Shortcut',
+    shortcutPlaceholder: 'e.g. Ctrl+Shift+T',
+    shortcutConflict: 'This shortcut is already in use',
   },
   es: {
     overview: 'Resumen',
@@ -182,7 +187,7 @@ const dict = {
     pending: 'Pendiente',
     inProgress: 'En progreso',
     done: 'Hecho',
-    vault: 'Bóveda',
+    vault: 'Gestor de contraseñas',
     setupVault: 'Configurar Bóveda',
     masterPassword: 'Contraseña maestra',
     confirmPassword: 'Confirmar contraseña',
@@ -242,6 +247,11 @@ const dict = {
     incorrectCurrentPassword: 'La contraseña actual es incorrecta',
     passwordTooShort: 'La nueva contraseña debe tener al menos 8 caracteres',
     passwordsDoNotMatch: 'Las contraseñas no coinciden',
+    keyboardShortcuts: 'Atajos de teclado',
+    resetToDefaults: 'Restablecer por defecto',
+    customShortcut: 'Atajo personalizado',
+    shortcutPlaceholder: 'ej. Ctrl+Shift+T',
+    shortcutConflict: 'Este atajo ya está en uso',
   },
 } as const;
 

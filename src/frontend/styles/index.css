@@ -32,15 +32,15 @@
 
 /* ── Light theme ── */
 .light {
-  --matrix-bg: 245 245 245; /* #f5f5f5 */
+  --matrix-bg: 248 249 250; /* #f8f9fa — softer than pure #f5f5f5 */
   --matrix-surface: 255 255 255; /* #ffffff */
-  --matrix-border: 215 215 215; /* #d7d7d7 */
-  --matrix-accent: 110 60 190; /* #6e3cbe — purple to match icon */
-  --matrix-accent-hover: 90 45 165; /* #5a2da5 */
-  --matrix-success: 45 138 78; /* #2d8a4e */
-  --matrix-warning: 180 120 0; /* #b47800 */
-  --matrix-danger: 200 40 40; /* #c82828 */
-  --matrix-muted: 110 110 110; /* #6e6e6e */
+  --matrix-border: 222 226 230; /* #dee2e6 — slightly blue-gray, more refined */
+  --matrix-accent: 99 52 178; /* #6334b2 — richer purple, better contrast */
+  --matrix-accent-hover: 79 37 155; /* #4f259b */
+  --matrix-success: 25 135 84; /* #198754 — Bootstrap-grade green */
+  --matrix-warning: 173 107 0; /* #ad6b00 — readable on white */
+  --matrix-danger: 185 28 28; /* #b91c1c — strong red */
+  --matrix-muted: 100 107 115; /* #646b73 — blue-gray muted, not flat gray */
 }
 
 body {
@@ -232,13 +232,55 @@ body {
   font-weight: 600;
 }
 
+/* Active pilled buttons: dark text on orange (dark mode), white on purple (light mode) */
+.pilled-active {
+  color: #1a1a1a;
+}
+.light .pilled-active {
+  color: #ffffff;
+}
+
+/* Light mode: selection */
+.light ::selection {
+  background: rgba(99, 52, 178, 0.2);
+}
+
+/* Light mode: hover states need visible contrast */
+.light .hover\:text-gray-300:hover {
+  color: #1a1a1a !important;
+}
+.light .hover\:text-gray-200:hover {
+  color: #111111 !important;
+}
+.light .hover\:border-gray-500:hover {
+  border-color: #9ca3af !important;
+}
+
+/* Light mode: focus rings */
+.light .focus\:border-matrix-accent\/50:focus {
+  border-color: rgba(99, 52, 178, 0.5);
+  box-shadow: 0 0 0 2px rgba(99, 52, 178, 0.1);
+}
+
+/* Light mode: input fields */
+.light input,
+.light textarea,
+.light select {
+  color: #1a1a1a;
+}
+.light input::placeholder,
+.light textarea::placeholder {
+  color: #9ca3af;
+}
+
 /* Scrollbar for light mode */
 .light ::-webkit-scrollbar-track {
-  background: #f0f0f0;
+  background: #f1f3f5;
 }
 .light ::-webkit-scrollbar-thumb {
-  background: #c0c0c0;
+  background: #ced4da;
+  border-radius: 3px;
 }
 .light ::-webkit-scrollbar-thumb:hover {
-  background: #a0a0a0;
+  background: #adb5bd;
 }

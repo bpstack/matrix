@@ -7,6 +7,7 @@ const router = Router();
 router.get('/settings', settingsController.getAll);
 router.get('/settings/:key', settingsController.getByKey);
 router.put('/settings/:key', settingsController.upsert);
+router.delete('/settings/:key', settingsController.delete);
 router.post('/db/reset', dbController.reset);
 
 export { router as settingsRouter };
