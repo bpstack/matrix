@@ -3,6 +3,7 @@ import { useTasks, useCreateTask, useUpdateTask, useDeleteTask, Task } from '../
 import { usePlans } from '../../hooks/usePlans';
 import { useUiStore } from '../../stores/ui.store';
 import { t, LangKey } from '../../lib/i18n';
+import { Dropdown } from '../ui/Dropdown';
 
 const COLUMNS = ['pending', 'in_progress', 'done'] as const;
 const columnLabels: Record<string, LangKey> = {
@@ -143,33 +144,33 @@ export function TaskBoard() {
     setAddingTask(false);
   };
 
-  const selectCls =
-    'bg-matrix-bg border border-matrix-border rounded px-2 py-1 text-xs text-gray-300 focus:outline-none';
 
   return (
     <div>
       {/* Filters + Add Task */}
       <div className="flex flex-col gap-2 mb-4">
         <div className="flex items-center gap-2">
-          <select
-            value={planFilter}
-            onChange={(e) => setPlanFilter(e.target.value ? Number(e.target.value) : '')}
-            className={selectCls}
-          >
-            <option value="">All plans</option>
-            {(plans || []).map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.title}
-              </option>
-            ))}
-          </select>
-          <select value={priorityFilter} onChange={(e) => setPriorityFilter(e.target.value)} className={selectCls}>
-            <option value="">All priorities</option>
-            <option value="low">{t('low', language)}</option>
-            <option value="medium">{t('medium', language)}</option>
-            <option value="high">{t('high', language)}</option>
-            <option value="urgent">{t('urgent', language)}</option>
-          </select>
+          <Dropdown
+            value={String(planFilter)}
+            onChange={(val) => setPlanFilter(val ? Number(val) : '')}
+            options={[
+              { value: '', label: 'All plans' },
+              ...(plans || []).map((p) => ({ value: String(p.id), label: p.title })),
+            ]}
+            className="w-40"
+          />
+          <Dropdown
+            value={priorityFilter}
+            onChange={setPriorityFilter}
+            options={[
+              { value: '', label: 'All priorities' },
+              { value: 'low', label: t('low', language) },
+              { value: 'medium', label: t('medium', language) },
+              { value: 'high', label: t('high', language) },
+              { value: 'urgent', label: t('urgent', language) },
+            ]}
+            className="w-36"
+          />
           {!addingTask && (
             <button
               onClick={() => setAddingTask(true)}
@@ -188,19 +189,15 @@ export function TaskBoard() {
             className="flex flex-col gap-2"
           >
             <div className="flex gap-2">
-              <select
-                autoFocus
-                value={newPlanId}
-                onChange={(e) => setNewPlanId(e.target.value ? Number(e.target.value) : '')}
-                className={selectCls}
-              >
-                <option value="">{t('selectPlan', language)}</option>
-                {(plans || []).map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.title}
-                  </option>
-                ))}
-              </select>
+              <Dropdown
+                value={String(newPlanId)}
+                onChange={(val) => setNewPlanId(val ? Number(val) : '')}
+                options={[
+                  { value: '', label: t('selectPlan', language) },
+                  ...(plans || []).map((p) => ({ value: String(p.id), label: p.title })),
+                ]}
+                className="w-40"
+              />
               <input
                 value={newTitle}
                 onChange={(e) => setNewTitle(e.target.value)}
@@ -237,7 +234,7 @@ export function TaskBoard() {
         )}
       </div>
 
-      <div className="grid grid-cols-3 gap-4 w-3/4">
+      <div className="grid grid-cols-3 gap-4 w-full">
         {COLUMNS.map((col) => (
           <div
             key={col}

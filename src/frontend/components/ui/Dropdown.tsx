@@ -43,7 +43,7 @@ export function Dropdown({ value, onChange, options, className }: DropdownProps)
         </svg>
       </button>
       {open && (
-        <div className="absolute z-50 mt-1 w-full min-w-[140px] bg-matrix-surface border border-matrix-border rounded shadow-lg py-1">
+        <div className="absolute z-50 mt-1 w-full min-w-[140px] bg-matrix-surface border border-matrix-border rounded shadow-lg py-1 overflow-y-auto max-h-[480px]">
           {options.map((opt) => (
             <button
               key={opt.value}

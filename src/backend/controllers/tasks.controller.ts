@@ -20,7 +20,7 @@ const updateSchema = z.object({
   priority: z.enum(['low', 'medium', 'high', 'urgent']).optional(),
   sortOrder: z.number().optional(),
   planId: z.number().optional(),
-  deadline: z.string().optional(),
+  deadline: z.string().nullable().optional(),
 });
 
 export const tasksController = {
@@ -90,6 +90,12 @@ export const tasksController = {
 
     const data: Record<string, unknown> = { ...parsed.data };
     const status = parsed.data.status;
+
+    // Handle empty string deadline as null (to clear it)
+    if (data.deadline === '') {
+      data.deadline = null;
+    }
+
     if (status === 'done') {
       data.completedAt = new Date().toISOString();
     } else if (status) {

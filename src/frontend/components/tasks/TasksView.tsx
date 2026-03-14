@@ -5,6 +5,7 @@ import { useUiStore } from '../../stores/ui.store';
 import { t, LangKey } from '../../lib/i18n';
 import { TaskBoard } from './TaskBoard';
 import { Calendar } from '../ui/Calendar';
+import { Dropdown } from '../ui/Dropdown';
 
 const statusIcons: Record<string, string> = { pending: '○', in_progress: '◐', done: '●' };
 const statusColors: Record<string, string> = {
@@ -66,7 +67,7 @@ export function TasksView() {
       id,
       title,
       description: editDescription.trim() || undefined,
-      deadline: editDeadline || undefined,
+      deadline: editDeadline === '' ? null : editDeadline || undefined,
     });
     cancelEdit();
   };
@@ -126,8 +127,6 @@ export function TasksView() {
   const planNameMap = new Map<number, string>();
   for (const p of plans || []) planNameMap.set(p.id, p.title);
 
-  const selectCls =
-    'bg-matrix-bg border border-matrix-border rounded px-2 py-1 text-sm text-gray-300 focus:outline-none';
 
   return (
     <div className="p-4">
@@ -151,12 +150,17 @@ export function TasksView() {
             </button>
           </div>
           {viewMode === 'list' && (
-            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className={selectCls}>
-              <option value="">{t('allStatuses', language)}</option>
-              <option value="pending">Pending</option>
-              <option value="in_progress">In Progress</option>
-              <option value="done">Done</option>
-            </select>
+            <Dropdown
+              value={statusFilter}
+              onChange={setStatusFilter}
+              options={[
+                { value: '', label: t('allStatuses', language) },
+                { value: 'pending', label: 'Pending' },
+                { value: 'in_progress', label: 'In Progress' },
+                { value: 'done', label: 'Done' },
+              ]}
+              className="w-36"
+            />
           )}
         </div>
       </div>
@@ -187,19 +191,15 @@ export function TasksView() {
                 className="flex flex-col gap-2 mb-4"
               >
                 <div className="flex gap-2">
-                  <select
-                    autoFocus
-                    value={newPlanId}
-                    onChange={(e) => setNewPlanId(e.target.value ? Number(e.target.value) : '')}
-                    className={selectCls}
-                  >
-                    <option value="">{t('selectPlan', language)}</option>
-                    {plans.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.title}
-                      </option>
-                    ))}
-                  </select>
+                  <Dropdown
+                    value={String(newPlanId)}
+                    onChange={(val) => setNewPlanId(val ? Number(val) : '')}
+                    options={[
+                      { value: '', label: t('selectPlan', language) },
+                      ...plans.map((p) => ({ value: String(p.id), label: p.title })),
+                    ]}
+                    className="w-40"
+                  />
                   <input
                     value={newTitle}
                     onChange={(e) => setNewTitle(e.target.value)}

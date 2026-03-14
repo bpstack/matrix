@@ -2,6 +2,7 @@ import React from 'react';
 import { useUiStore, Tab } from '../../stores/ui.store';
 import { t } from '../../lib/i18n';
 import { useDeadlines } from '../../hooks/useDeadlines';
+import { useSettings } from '../../hooks/useSettings';
 
 const tabs: { key: Tab; icon: string }[] = [
   { key: 'overview', icon: '◈' },
@@ -13,8 +14,11 @@ const tabs: { key: Tab; icon: string }[] = [
 ];
 
 export function Sidebar() {
-  const { activeTab, setActiveTab, sidebarCollapsed, toggleSidebar, language } = useUiStore();
+  const { activeTab, setActiveTab, sidebarCollapsed, toggleSidebar, language, deadlinesHidden } = useUiStore();
   const { data: deadlines } = useDeadlines();
+  const { data: settings } = useSettings();
+
+  const enabled = settings?.['deadlineAlerts'] !== 'false';
 
   return (
     <aside
@@ -31,7 +35,7 @@ export function Sidebar() {
       <nav className="flex-1 py-1">
         {tabs.map(({ key, icon }) => {
           const isActive = activeTab === key;
-          const showBadge = key === 'tasks' && deadlines && deadlines.total > 0;
+          const showBadge = key === 'tasks' && enabled && !deadlinesHidden && deadlines && deadlines.total > 0;
           return (
             <button
               key={key}

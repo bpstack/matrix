@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useUpdateSetting } from '../../hooks/useSettings';
+import { useSettings, useUpdateSetting } from '../../hooks/useSettings';
 import { usePasswordStatus, useChangeMasterPassword, useUnlockVault, useLockVault } from '../../hooks/usePasswords';
 import { useShortcuts, Shortcut, formatKeyCombo } from '../../hooks/useShortcuts';
 import { useUiStore, Theme } from '../../stores/ui.store';
@@ -34,6 +34,7 @@ function SettingRow({ label, children, last = false }: { label: string; children
 
 export function SettingsView() {
   const { language, setLanguage, theme, setTheme } = useUiStore();
+  const { data: settings } = useSettings();
   const updateSetting = useUpdateSetting();
   const { shortcuts, updateShortcuts, resetToDefaults } = useShortcuts();
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
@@ -184,6 +185,29 @@ export function SettingsView() {
                 </button>
               ))}
             </div>
+          </SettingRow>
+        </SectionCard>
+
+        {/* ── Notifications ── */}
+        <SectionCard>
+          <SectionHeader title={language === 'es' ? 'Notificaciones' : 'Notifications'} />
+          <SettingRow label={t('deadlineAlerts', language)} last>
+            <button
+              onClick={() => {
+                const current = settings?.['deadlineAlerts'];
+                const newValue = current === 'false' ? 'true' : 'false';
+                updateSetting.mutate({ key: 'deadlineAlerts', value: newValue });
+              }}
+              className={`w-10 h-5 rounded-full transition-colors relative ${
+                settings?.['deadlineAlerts'] === 'false' ? 'bg-matrix-border' : 'bg-matrix-accent'
+              }`}
+            >
+              <span
+                className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${
+                  settings?.['deadlineAlerts'] === 'false' ? 'left-0.5' : 'left-[22px]'
+                }`}
+              />
+            </button>
           </SettingRow>
         </SectionCard>
 

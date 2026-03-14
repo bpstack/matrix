@@ -125,6 +125,9 @@ const dict = {
     customShortcut: 'Custom Shortcut',
     shortcutPlaceholder: 'e.g. Ctrl+Shift+T',
     shortcutConflict: 'This shortcut is already in use',
+    deadlineAlerts: 'Deadline Alerts',
+    deadlineAlertsDesc: 'Show alerts for upcoming task deadlines',
+    todoHasContent: 'Pending items',
   },
   es: {
     overview: 'Resumen',
@@ -252,6 +255,9 @@ const dict = {
     customShortcut: 'Atajo personalizado',
     shortcutPlaceholder: 'ej. Ctrl+Shift+T',
     shortcutConflict: 'Este atajo ya está en uso',
+    deadlineAlerts: 'Alertas de vencimiento',
+    deadlineAlertsDesc: 'Mostrar alertas para fechas límite de tareas',
+    todoHasContent: 'Hay cosas que hacer',
   },
 } as const;
 

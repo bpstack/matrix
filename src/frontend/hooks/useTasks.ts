@@ -42,6 +42,7 @@ export function useCreateTask() {
       qc.invalidateQueries({ queryKey: ['plans'] });
       qc.invalidateQueries({ queryKey: ['objectives'] });
       qc.invalidateQueries({ queryKey: ['mission'] });
+      qc.invalidateQueries({ queryKey: ['deadlines'] });
     },
   });
 }
@@ -58,7 +59,7 @@ export function useUpdateTask() {
       description?: string;
       status?: string;
       priority?: string;
-      deadline?: string;
+      deadline?: string | null;
       sortOrder?: number;
     }) => apiFetch(`/tasks/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
     onSuccess: () => {
@@ -66,6 +67,7 @@ export function useUpdateTask() {
       qc.invalidateQueries({ queryKey: ['plans'] });
       qc.invalidateQueries({ queryKey: ['objectives'] });
       qc.invalidateQueries({ queryKey: ['mission'] });
+      qc.invalidateQueries({ queryKey: ['deadlines'] });
     },
   });
 }
@@ -79,6 +81,7 @@ export function useDeleteTask() {
       qc.invalidateQueries({ queryKey: ['plans'] });
       qc.invalidateQueries({ queryKey: ['objectives'] });
       qc.invalidateQueries({ queryKey: ['mission'] });
+      qc.invalidateQueries({ queryKey: ['deadlines'] });
     },
   });
 }

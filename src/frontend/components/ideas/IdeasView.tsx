@@ -16,6 +16,7 @@ import { useMission } from '../../hooks/useMission';
 import { useProjects } from '../../hooks/useProjects';
 import { useUiStore } from '../../stores/ui.store';
 import { t } from '../../lib/i18n';
+import { Dropdown } from '../ui/Dropdown';
 
 const columns = [
   { key: 'pending', label: 'Pending', color: 'border-gray-600' },
@@ -283,38 +284,37 @@ export function IdeasView() {
                 <label className="text-xs text-matrix-muted block mb-1">
                   {language === 'es' ? 'Vincular a' : 'Link to'}
                 </label>
-                <select
+                <Dropdown
                   value={newTargetType}
-                  onChange={(e) => {
-                    setNewTargetType(e.target.value);
+                  onChange={(val) => {
+                    setNewTargetType(val);
                     setNewTargetId('');
                   }}
-                  className="w-full bg-matrix-bg border border-matrix-border rounded px-2 py-1.5 text-sm text-gray-300"
-                >
-                  <option value="">--</option>
-                  <option value="mission">Mission</option>
-                  <option value="objective">Objective</option>
-                  <option value="plan">Plan</option>
-                  <option value="task">Task</option>
-                </select>
+                  options={[
+                    { value: '', label: '--' },
+                    { value: 'mission', label: 'Mission' },
+                    { value: 'objective', label: 'Objective' },
+                    { value: 'plan', label: 'Plan' },
+                    { value: 'task', label: 'Task' },
+                  ]}
+                />
               </div>
               {newTargetType && newTargetType !== 'task' && (
                 <div>
                   <label className="text-xs text-matrix-muted block mb-1">
                     {language === 'es' ? 'Entidad' : 'Entity'}
                   </label>
-                  <select
-                    value={newTargetId}
-                    onChange={(e) => setNewTargetId(Number(e.target.value))}
-                    className="w-full bg-matrix-bg border border-matrix-border rounded px-2 py-1.5 text-sm text-gray-300"
-                  >
-                    <option value="">--</option>
-                    {targetEntities().map((e: { id: number; title: string }) => (
-                      <option key={e.id} value={e.id}>
-                        {e.title}
-                      </option>
-                    ))}
-                  </select>
+                  <Dropdown
+                    value={String(newTargetId)}
+                    onChange={(val) => setNewTargetId(val ? Number(val) : '')}
+                    options={[
+                      { value: '', label: '--' },
+                      ...targetEntities().map((e: { id: number; title: string }) => ({
+                        value: String(e.id),
+                        label: e.title,
+                      })),
+                    ]}
+                  />
                 </div>
               )}
             </div>
@@ -322,18 +322,17 @@ export function IdeasView() {
               <label className="text-xs text-matrix-muted block mb-1">
                 {language === 'es' ? 'Proyecto' : 'Project'}
               </label>
-              <select
-                value={newProjectId}
-                onChange={(e) => setNewProjectId(e.target.value ? Number(e.target.value) : '')}
-                className="w-full bg-matrix-bg border border-matrix-border rounded px-2 py-1.5 text-sm text-gray-300"
-              >
-                <option value="">--</option>
-                {projectsList.map((p: { id: number; name: string }) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
-              </select>
+              <Dropdown
+                value={String(newProjectId)}
+                onChange={(val) => setNewProjectId(val ? Number(val) : '')}
+                options={[
+                  { value: '', label: '--' },
+                  ...projectsList.map((p: { id: number; name: string }) => ({
+                    value: String(p.id),
+                    label: p.name,
+                  })),
+                ]}
+              />
             </div>
             <div className="flex justify-end gap-2">
               <button

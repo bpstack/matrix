@@ -25,7 +25,7 @@ export function ProjectDetail({ projectId, onBack }: Props) {
 
   const ts = project.techStats;
   const scan = project.scan;
-  const rawData = scan?.rawData ? JSON.parse(scan.rawData) : [];
+  const scanData = scan?.rawData ? JSON.parse(scan.rawData) : null;
 
   const statusColors: Record<string, string> = {
     active: 'bg-matrix-success/20 text-matrix-success',
@@ -263,87 +263,57 @@ export function ProjectDetail({ projectId, onBack }: Props) {
       )}
 
       {/* Scan breakdown + Git info side by side */}
-      {(rawData.length > 0 || ts?.lastCommit) && (
+      {(scanData?.roadmap || ts?.lastCommit) && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
           {/* Scan breakdown */}
-          {rawData.length > 0 && (
+          {scanData?.roadmap && (
             <div className="p-4 bg-matrix-surface rounded-lg border border-matrix-border">
               <h3 className="text-sm font-medium text-gray-300 mb-3">{t('scanBreakdown', language)}</h3>
-              {/* Header */}
-              <div className="flex items-center text-xs text-matrix-muted mb-2 px-1">
-                <span className="w-24">File</span>
-                <span className="w-12 text-center">Tasks</span>
-                <span className="flex-1 mx-2">Progress</span>
-                <span className="w-8 text-right">%</span>
-                <span className="w-10 text-center" title="Blockers - Issues that are blocking progress">
-                  ⚠
-                </span>
-                <span className="w-10 text-center" title="WIP - Work in progress items">
-                  ◉
-                </span>
-              </div>
-              <div className="space-y-1">
-                {rawData.map(
-                  (f: {
-                    file: string;
-                    completedTasks: number;
-                    totalTasks: number;
-                    progressPercent: number;
-                    blockers: string[];
-                    wipItems: string[];
-                  }) => (
-                    <div key={f.file} className="flex items-center text-xs bg-matrix-bg/50 rounded px-2 py-1.5">
-                      <span className="w-24 text-gray-300 font-mono truncate" title={f.file}>
-                        {f.file}
-                      </span>
-                      <span className="w-12 text-center text-matrix-muted">
-                        {f.completedTasks}/{f.totalTasks}
-                      </span>
-                      <div className="flex-1 mx-2">
-                        <div className="h-1 bg-matrix-border rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-matrix-accent rounded-full"
-                            style={{ width: `${f.progressPercent}%` }}
-                          />
-                        </div>
-                      </div>
-                      <span className="w-8 text-right text-matrix-accent font-mono">{f.progressPercent}%</span>
-                      <span className="w-10 text-center">
-                        {f.blockers.length > 0 ? (
-                          <span
-                            className="inline-flex items-center justify-center w-5 h-5 rounded bg-matrix-danger/20 text-matrix-danger text-xs font-bold cursor-help"
-                            title={`BLOCKERS:\n\n${f.blockers.join('\n')}`}
-                          >
-                            {f.blockers.length}
-                          </span>
-                        ) : (
-                          <span className="text-gray-600">-</span>
-                        )}
-                      </span>
-                      <span className="w-10 text-center">
-                        {f.wipItems.length > 0 ? (
-                          <span
-                            className="inline-flex items-center justify-center w-5 h-5 rounded bg-matrix-warning/20 text-matrix-warning text-xs font-bold cursor-help"
-                            title={`WORK IN PROGRESS:\n\n${f.wipItems.join('\n')}`}
-                          >
-                            {f.wipItems.length}
-                          </span>
-                        ) : (
-                          <span className="text-gray-600">-</span>
-                        )}
-                      </span>
-                    </div>
-                  ),
-                )}
-              </div>
-              {/* Legend */}
-              <div className="mt-2 pt-2 border-t border-matrix-border flex gap-3 text-xs text-matrix-muted">
-                <span>
-                  <span className="text-matrix-danger">⚠</span> Blocker
-                </span>
-                <span>
-                  <span className="text-matrix-warning">◉</span> Work in progress
-                </span>
+              <div className="space-y-2 text-xs">
+                {/* Roadmap */}
+                <div className="flex items-center justify-between bg-matrix-bg/50 rounded px-3 py-2">
+                  <span className="text-gray-300 font-mono">ROADMAP</span>
+                  <div className="flex items-center gap-2">
+                    {scanData.roadmap?.exists ? (
+                      <>
+                        <span className="text-matrix-accent font-mono">
+                          {scanData.roadmap.completedPhases || 0}/{scanData.roadmap.totalPhases || 0}
+                        </span>
+                        <span className="text-gray-500 text-[10px]">{scanData.roadmap.lineCount || 0} lines</span>
+                      </>
+                    ) : (
+                      <span className="text-matrix-danger">✕</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* TODO */}
+                <div className="flex items-center justify-between bg-matrix-bg/50 rounded px-3 py-2">
+                  <span className="text-gray-300 font-mono">TODO</span>
+                  <div className="flex items-center gap-2">
+                    {scanData.todo?.exists ? (
+                      scanData.todo.hasContent ? (
+                        <span className="text-matrix-warning text-[10px]">{t('todoHasContent', language)}</span>
+                      ) : (
+                        <span className="text-matrix-success">✓</span>
+                      )
+                    ) : (
+                      <span className="text-matrix-danger">✕</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* README */}
+                <div className="flex items-center justify-between bg-matrix-bg/50 rounded px-3 py-2">
+                  <span className="text-gray-300 font-mono">README</span>
+                  <div className="flex items-center gap-2">
+                    {scanData.readme?.exists ? (
+                      <span className="text-matrix-success">✓</span>
+                    ) : (
+                      <span className="text-matrix-danger">✕</span>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           )}
@@ -401,6 +371,148 @@ export function ProjectDetail({ projectId, onBack }: Props) {
           ))}
         </div>
       )}
+
+      {/* Help / How it works - Separator */}
+      <div className="mt-8 mb-2 flex items-center gap-4">
+        <div className="h-px flex-1 bg-gradient-to-r from-transparent via-matrix-border to-transparent" />
+        <div className="flex items-center gap-2 px-3 py-1 bg-matrix-surface/50 rounded-full border border-matrix-border/50">
+          <svg
+            className="w-3.5 h-3.5 text-matrix-accent"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={1.5}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"
+            />
+          </svg>
+          <span className="text-xs font-medium text-gray-400 whitespace-nowrap">
+            {language === 'es' ? 'Guía del análisis' : 'Scan Guide'}
+          </span>
+        </div>
+        <div className="h-px flex-1 bg-gradient-to-r from-transparent via-matrix-border to-transparent" />
+      </div>
+
+      <div className="p-5 bg-matrix-surface rounded-lg border border-matrix-border shadow-sm">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 text-xs">
+          {/* Column 1: Documentación */}
+          <div className="space-y-3">
+            <div className="flex items-start gap-2.5">
+              <div className="w-5 h-5 rounded bg-matrix-accent/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <span className="text-matrix-accent text-[10px] font-bold">R</span>
+              </div>
+              <div>
+                <span className="text-gray-300 font-medium">ROADMAP</span>
+                <p className="text-matrix-muted mt-0.5 leading-relaxed">
+                  {language === 'es'
+                    ? 'Cuenta encabezados ## como fases/etapas del proyecto. Las fases se consideran completadas cuando tienen ✅ al final o están marcadas como [x]. El número de líneas indica el nivel de detalle.'
+                    : 'Counts ## headers as project phases/stages. Phases are marked complete with ✅ at the end or [x] checkboxes. Line count indicates detail level.'}
+                </p>
+                <div className="mt-1.5 flex gap-2">
+                  <code className="px-1.5 py-0.5 bg-matrix-bg rounded text-[10px] text-gray-500">
+                    ## Phase 1: Setup ✅
+                  </code>
+                  <code className="px-1.5 py-0.5 bg-matrix-bg rounded text-[10px] text-gray-500">- [x] Task done</code>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-2.5">
+              <div className="w-5 h-5 rounded bg-matrix-warning/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <span className="text-matrix-warning text-[10px] font-bold">T</span>
+              </div>
+              <div>
+                <span className="text-gray-300 font-medium">TODO</span>
+                <p className="text-matrix-muted mt-0.5 leading-relaxed">
+                  {language === 'es'
+                    ? 'Verifica si existe un archivo de pendientes. Muestra el estado actual del proyecto en cuanto a tareas pendientes.'
+                    : 'Checks for a pending tasks file. Shows current project status regarding remaining work.'}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-2.5">
+              <div className="w-5 h-5 rounded bg-matrix-success/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <span className="text-matrix-success text-[10px] font-bold">D</span>
+              </div>
+              <div>
+                <span className="text-gray-300 font-medium">README</span>
+                <p className="text-matrix-muted mt-0.5 leading-relaxed">
+                  {language === 'es'
+                    ? 'Verifica la existencia de documentación básica del proyecto. Un proyecto profesional siempre debería tener uno.'
+                    : 'Checks for basic project documentation. Every professional project should have one.'}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Column 2: Técnología */}
+          <div className="space-y-3">
+            <div className="flex items-start gap-2.5">
+              <div className="w-5 h-5 rounded bg-blue-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <span className="text-blue-400 text-[10px] font-bold">🧪</span>
+              </div>
+              <div>
+                <span className="text-gray-300 font-medium">{language === 'es' ? 'Tests' : 'Tests'}</span>
+                <p className="text-matrix-muted mt-0.5 leading-relaxed">
+                  {language === 'es'
+                    ? 'Detecta la presencia de tests buscando carpetas estándar (test, tests, __tests__, spec, cypress, playwright) y archivos de configuración de frameworks de testing.'
+                    : 'Detects tests by looking for standard folders (test, tests, __tests__, spec, cypress, playwright) and testing framework config files.'}
+                </p>
+                <div className="mt-1.5 flex flex-wrap gap-1.5">
+                  <code className="px-1.5 py-0.5 bg-matrix-bg rounded text-[10px] text-gray-500">/tests</code>
+                  <code className="px-1.5 py-0.5 bg-matrix-bg rounded text-[10px] text-gray-500">/src/__tests__</code>
+                  <code className="px-1.5 py-0.5 bg-matrix-bg rounded text-[10px] text-gray-500">vitest.config.ts</code>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-2.5">
+              <div className="w-5 h-5 rounded bg-purple-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <span className="text-purple-400 text-[10px] font-bold">📦</span>
+              </div>
+              <div>
+                <span className="text-gray-300 font-medium">{language === 'es' ? 'Dependencias' : 'Dependencies'}</span>
+                <p className="text-matrix-muted mt-0.5 leading-relaxed">
+                  {language === 'es'
+                    ? 'Cuenta el total de dependencias del proyectoextrayéndolas del archivo de configuración del gestor de paquetes correspondiente.'
+                    : 'Counts total project dependencies by extracting them from the corresponding package manager config file.'}
+                </p>
+                <div className="mt-1.5 flex flex-wrap gap-1.5">
+                  <code className="px-1.5 py-0.5 bg-matrix-bg rounded text-[10px] text-gray-500">package.json</code>
+                  <code className="px-1.5 py-0.5 bg-matrix-bg rounded text-[10px] text-gray-500">requirements.txt</code>
+                  <code className="px-1.5 py-0.5 bg-matrix-bg rounded text-[10px] text-gray-500">Cargo.toml</code>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-2.5">
+              <div className="w-5 h-5 rounded bg-amber-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <span className="text-amber-400 text-[10px] font-bold">⚙</span>
+              </div>
+              <div>
+                <span className="text-gray-300 font-medium">CI/CD</span>
+                <p className="text-matrix-muted mt-0.5 leading-relaxed">
+                  {language === 'es'
+                    ? 'Detecta pipelines de integración continua configurados buscando archivos de configuración en rutas estándar.'
+                    : 'Detects continuous integration pipelines by looking for config files in standard paths.'}
+                </p>
+                <div className="mt-1.5 flex flex-wrap gap-1.5">
+                  <code className="px-1.5 py-0.5 bg-matrix-bg rounded text-[10px] text-gray-500">
+                    .github/workflows
+                  </code>
+                  <code className="px-1.5 py-0.5 bg-matrix-bg rounded text-[10px] text-gray-500">.gitlab-ci.yml</code>
+                  <code className="px-1.5 py-0.5 bg-matrix-bg rounded text-[10px] text-gray-500">Jenkinsfile</code>
+                  <code className="px-1.5 py-0.5 bg-matrix-bg rounded text-[10px] text-gray-500">.travis.yml</code>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

@@ -116,7 +116,7 @@ export function Calendar({ value, onChange, className }: CalendarProps) {
       </button>
 
       {open && (
-        <div className="absolute z-50 mt-1 bg-matrix-surface border border-matrix-border rounded-lg shadow-lg p-3 w-[240px]">
+        <div className="absolute z-50 mt-1 right-0 bg-matrix-surface border border-matrix-border rounded-lg shadow-lg p-3 w-[240px]">
           <div className="flex items-center justify-between mb-2">
             <button
               type="button"

@@ -62,7 +62,7 @@ export const tasksRepo = {
       priority: string;
       sortOrder: number;
       planId: number;
-      deadline: string;
+      deadline: string | null;
       completedAt: string | null;
     }>,
   ) {

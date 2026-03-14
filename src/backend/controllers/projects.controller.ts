@@ -103,13 +103,18 @@ export const projectsController = {
 
     // Run scan
     const scanResult = scanProject(p.path);
+
+    // Calculate totals from roadmap only
+    const totalPhases = scanResult.roadmap.totalPhases || 0;
+    const completedPhases = scanResult.roadmap.completedPhases || 0;
+
     const scan = projectsRepo.upsertScan(id, {
-      totalTasks: scanResult.totalTasks,
-      completedTasks: scanResult.completedTasks,
-      blockers: scanResult.blockers,
-      wipItems: scanResult.wipItems,
-      progressPercent: scanResult.progressPercent,
-      rawData: JSON.stringify(scanResult.rawData),
+      totalTasks: totalPhases,
+      completedTasks: completedPhases,
+      blockers: 0,
+      wipItems: 0,
+      progressPercent: totalPhases > 0 ? Math.round((completedPhases / totalPhases) * 100) : 0,
+      rawData: JSON.stringify(scanResult),
     });
 
     // Also refresh tech stats

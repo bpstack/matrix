@@ -2,24 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { execSync } from 'node:child_process';
 
-const TARGET_FILES = [
-  'roadmap.md',
-  'plan.md',
-  'todo.md',
-  'guia.md',
-  'guide.md',
-  'readme.md',
-  'changelog.md',
-  'ROADMAP.md',
-  'PLAN.md',
-  'TODO.md',
-  'GUIA.md',
-  'GUIDE.md',
-  'README.md',
-  'CHANGELOG.md',
-];
-
-const GUIDE_FILES = ['guia.md', 'guide.md', 'GUIA.md', 'GUIDE.md'];
+const TARGET_FILES = ['roadmap.md', 'todo.md', 'readme.md', 'ROADMAP.md', 'TODO.md', 'README.md'];
 
 const IGNORE_DIRS = new Set([
   'node_modules',
@@ -73,20 +56,18 @@ const LANG_MAP: Record<string, { name: string; color: string }> = {
 
 export interface FileScanResult {
   file: string;
-  totalTasks: number;
-  completedTasks: number;
-  blockers: string[];
-  wipItems: string[];
-  progressPercent: number;
+  type: 'roadmap' | 'plan' | 'todo' | 'readme' | 'changelog';
+  exists: boolean;
+  status?: string;
+  totalPhases?: number;
+  completedPhases?: number;
+  lineCount?: number;
 }
 
 export interface ScanResult {
-  totalTasks: number;
-  completedTasks: number;
-  blockers: number;
-  wipItems: number;
-  progressPercent: number;
-  rawData: FileScanResult[];
+  roadmap: FileScanResult;
+  todo: FileScanResult;
+  readme: FileScanResult;
 }
 
 export interface TechStats {
@@ -100,25 +81,31 @@ export interface TechStats {
   gitDirty: boolean;
 }
 
-/** Scan markdown files for checkbox progress */
+/** Scan markdown files for project documentation status */
 export function scanProject(projectPath: string): ScanResult {
+  const result: ScanResult = {
+    roadmap: { file: 'roadmap.md', type: 'roadmap', exists: false },
+    todo: { file: 'todo.md', type: 'todo', exists: false },
+    readme: { file: 'readme.md', type: 'readme', exists: false },
+  };
+
   if (!fs.existsSync(projectPath)) {
-    return { totalTasks: 0, completedTasks: 0, blockers: 0, wipItems: 0, progressPercent: 0, rawData: [] };
+    return result;
   }
 
-  const rawData: FileScanResult[] = [];
-
+  // Scan each target file
   for (const filename of TARGET_FILES) {
     const lowerName = filename.toLowerCase();
-    if (rawData.some((r) => r.file.toLowerCase() === lowerName)) continue;
-
-    const isGuide = GUIDE_FILES.some((g) => g.toLowerCase() === lowerName);
-    const isTodo = lowerName === 'todo.md';
-
     let filePath = path.join(projectPath, filename);
+
+    // Skip if already processed
+    const type = getFileType(lowerName);
+    if (!type || result[type].exists) continue;
+
+    // Try to find file (including recursive search for todo)
     if (!fs.existsSync(filePath)) {
-      if (isGuide || isTodo) {
-        const found = findFileRecursive(projectPath, filename);
+      if (lowerName === 'todo.md') {
+        const found = findFileRecursive(projectPath, 'todo.md');
         if (!found) continue;
         filePath = found;
       } else {
@@ -127,73 +114,66 @@ export function scanProject(projectPath: string): ScanResult {
     }
 
     const content = fs.readFileSync(filePath, 'utf-8');
-    const lines = content.split('\n');
+    const lineCount = content.split('\n').length;
+    const scanResult = scanMarkdownFile(content, type);
 
-    let total = 0;
-    let completed = 0;
-    const blockers: string[] = [];
-    const wipItems: string[] = [];
+    result[type] = {
+      file: filename,
+      type,
+      exists: true,
+      lineCount,
+      ...scanResult,
+    };
+  }
 
-    if (isGuide) {
-      total = 1;
-      completed = 1;
-    } else if (isTodo) {
-      for (const line of lines) {
-        const trimmed = line.trim();
-        if (/^\d+[\.\)]\s/.test(trimmed) || (/^[-*]\s/.test(trimmed) && !/^\[-|\[-/.test(trimmed))) {
-          total++;
-        }
-        if (/BLOCKER:/i.test(trimmed)) {
-          blockers.push(trimmed.replace(/.*BLOCKER:\s*/i, '').trim());
-        }
-        if (/WIP:/i.test(trimmed)) {
-          wipItems.push(trimmed.replace(/.*WIP:\s*/i, '').trim());
-        }
+  return result;
+}
+
+function getFileType(filename: string): 'roadmap' | 'todo' | 'readme' | null {
+  if (filename.includes('roadmap')) return 'roadmap';
+  if (filename.includes('todo')) return 'todo';
+  if (filename.includes('readme')) return 'readme';
+  return null;
+}
+
+function scanMarkdownFile(content: string, type: string): Record<string, unknown> {
+  const lines = content.split('\n');
+
+  if (type === 'roadmap') {
+    // Count phases/etapas (## headers or checkboxes)
+    let totalPhases = 0;
+    let completedPhases = 0;
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+      // Count ## headers as phases
+      if (/^#{2}\s+/.test(trimmed)) {
+        totalPhases++;
+        if (/✅/.test(trimmed)) completedPhases++;
       }
-    } else {
-      for (const line of lines) {
-        const trimmed = line.trim();
-        if (/^[-*] \[x\]/i.test(trimmed)) {
-          total++;
-          completed++;
-        } else if (/^[-*] \[ \]/.test(trimmed)) {
-          total++;
-        } else if (/^#{2,3} /.test(trimmed)) {
-          total++;
-          if (/✅/.test(trimmed)) completed++;
-        }
-        if (/BLOCKER:/i.test(trimmed)) {
-          blockers.push(trimmed.replace(/.*BLOCKER:\s*/i, '').trim());
-        }
-        if (/WIP:/i.test(trimmed)) {
-          wipItems.push(trimmed.replace(/.*WIP:\s*/i, '').trim());
-        }
+      // Count checkboxes as phases too
+      if (/^[-*]\s+\[x\]/i.test(trimmed)) {
+        totalPhases++;
+        completedPhases++;
+      } else if (/^[-*]\s+\[ \]/.test(trimmed)) {
+        totalPhases++;
       }
     }
 
-    rawData.push({
-      file: filename,
-      totalTasks: total,
-      completedTasks: completed,
-      blockers,
-      wipItems,
-      progressPercent: total > 0 ? Math.round((completed / total) * 100) : 0,
-    });
+    return { totalPhases, completedPhases };
   }
 
-  const totalTasks = rawData.reduce((s, r) => s + r.totalTasks, 0);
-  const completedTasks = rawData.reduce((s, r) => s + r.completedTasks, 0);
-  const blockers = rawData.reduce((s, r) => s + r.blockers.length, 0);
-  const wipItems = rawData.reduce((s, r) => s + r.wipItems.length, 0);
+  if (type === 'todo') {
+    // Check if has content (non-empty, non-comment lines)
+    const hasContent = lines.some((line) => {
+      const trimmed = line.trim();
+      return trimmed.length > 0 && !trimmed.startsWith('#');
+    });
 
-  return {
-    totalTasks,
-    completedTasks,
-    blockers,
-    wipItems,
-    progressPercent: totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0,
-    rawData,
-  };
+    return { hasContent };
+  }
+
+  return {};
 }
 
 /** Collect technical stats from filesystem */
@@ -253,10 +233,8 @@ export function collectTechStats(projectPath: string): TechStats {
   }
   merged.sort((a, b) => b.lines - a.lines);
 
-  // Detect tests
-  const hasTests =
-    checkExists(projectPath, ['test', 'tests', '__tests__', 'spec', 'specs']) ||
-    hasFilePattern(projectPath, /\.(test|spec)\./);
+  // Detect tests - comprehensive check
+  const hasTests = detectTests(projectPath);
 
   // Detect CI/CD
   const hasCiCd = checkExists(projectPath, [
@@ -290,21 +268,6 @@ export function collectTechStats(projectPath: string): TechStats {
 
 function checkExists(base: string, paths: string[]): boolean {
   return paths.some((p) => fs.existsSync(path.join(base, p)));
-}
-
-function hasFilePattern(dir: string, pattern: RegExp, depth = 2): boolean {
-  if (depth <= 0) return false;
-  try {
-    const entries = fs.readdirSync(dir, { withFileTypes: true });
-    for (const entry of entries) {
-      if (IGNORE_DIRS.has(entry.name)) continue;
-      if (entry.isFile() && pattern.test(entry.name)) return true;
-      if (entry.isDirectory() && hasFilePattern(path.join(dir, entry.name), pattern, depth - 1)) return true;
-    }
-  } catch {
-    // skip
-  }
-  return false;
 }
 
 function findFileRecursive(startDir: string, filename: string): string | null {
@@ -395,4 +358,93 @@ function isGitDirty(projectPath: string): boolean {
   } catch {
     return false;
   }
+}
+
+/** Comprehensive test detection for professional projects */
+function detectTests(projectPath: string): boolean {
+  const testDirs = [
+    'test',
+    'tests',
+    '__tests__',
+    'spec',
+    'specs',
+    'testing',
+    'e2e',
+    'integration',
+    'cypress',
+    'playwright',
+    'mocks',
+  ];
+  const testExtensions = ['.test.', '.spec.'];
+  const testFiles = [
+    'vitest.config.ts',
+    'vitest.config.js',
+    'vitest.config.mts',
+    'jest.config.js',
+    'jest.config.ts',
+    'jest.config.mjs',
+    'jest.setup.js',
+    'karma.conf.js',
+    'cypress.config.ts',
+    'cypress.config.js',
+    'playwright.config.ts',
+    'playwright.config.js',
+    '.mocharc.json',
+    'mocha.opts',
+    'pytest.ini',
+    'conftest.py',
+    'setup.cfg',
+    'pyproject.toml',
+  ];
+  const testPatterns = [
+    'coverage',
+    'nyc.config.js',
+    '.nycrc',
+    '.nycrc.json',
+    'vitest.workspace.ts',
+    'jest.workspace.js',
+  ];
+
+  function walk(dir: string, depth = 0): boolean {
+    if (depth > 4) return false;
+
+    let entries: fs.Dirent[];
+    try {
+      entries = fs.readdirSync(dir, { withFileTypes: true });
+    } catch {
+      return false;
+    }
+
+    for (const entry of entries) {
+      if (IGNORE_DIRS.has(entry.name)) continue;
+      if (entry.name === 'node_modules') continue;
+
+      const fullPath = path.join(dir, entry.name);
+
+      if (entry.isDirectory()) {
+        if (testDirs.includes(entry.name.toLowerCase())) {
+          return true;
+        }
+        if (walk(fullPath, depth + 1)) {
+          return true;
+        }
+      }
+
+      if (entry.isFile()) {
+        const name = entry.name.toLowerCase();
+        if (testExtensions.some((ext) => name.includes(ext))) {
+          return true;
+        }
+        if (testFiles.includes(entry.name)) {
+          return true;
+        }
+        if (testPatterns.includes(name)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  return walk(projectPath);
 }
