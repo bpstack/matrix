@@ -144,7 +144,6 @@ export function TaskBoard() {
     setAddingTask(false);
   };
 
-
   return (
     <div>
       {/* Filters + Add Task */}

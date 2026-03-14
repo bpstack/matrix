@@ -127,7 +127,6 @@ export function TasksView() {
   const planNameMap = new Map<number, string>();
   for (const p of plans || []) planNameMap.set(p.id, p.title);
 
-
   return (
     <div className="p-4">
       <div className="flex items-center justify-between mb-4">
