@@ -326,16 +326,17 @@ export function TasksView() {
                           >
                             {task.title}
                           </span>
-                          <select
+                          <Dropdown
                             value={task.priority}
-                            onChange={(e) => updateTask.mutate({ id: task.id, priority: e.target.value })}
-                            className="bg-matrix-bg border border-matrix-border rounded px-1.5 py-0.5 text-[10px] text-matrix-muted focus:outline-none cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity"
-                          >
-                            <option value="low">{t('low', language)}</option>
-                            <option value="medium">{t('medium', language)}</option>
-                            <option value="high">{t('high', language)}</option>
-                            <option value="urgent">{t('urgent', language)}</option>
-                          </select>
+                            onChange={(value) => updateTask.mutate({ id: task.id, priority: value })}
+                            options={[
+                              { value: 'low', label: t('low', language) },
+                              { value: 'medium', label: t('medium', language) },
+                              { value: 'high', label: t('high', language) },
+                              { value: 'urgent', label: t('urgent', language) },
+                            ]}
+                            className="w-20 opacity-0 group-hover:opacity-100 transition-opacity"
+                          />
                           <span className={`text-[10px] ${priorityColors[task.priority]} group-hover:hidden`}>
                             {t(task.priority as LangKey, language)}
                           </span>

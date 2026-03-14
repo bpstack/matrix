@@ -324,19 +324,19 @@ export function TaskBoard() {
                           )}
                           <div className="flex items-center gap-2 mt-2">
                             <span className={`w-2 h-2 rounded-full shrink-0 ${priorityDots[task.priority]}`} />
-                            <select
+                            <Dropdown
                               value={task.priority}
-                              onChange={(e) => {
-                                e.stopPropagation();
-                                updateTask.mutate({ id: task.id, priority: e.target.value });
+                              onChange={(value) => {
+                                updateTask.mutate({ id: task.id, priority: value });
                               }}
-                              className="hidden group-hover:inline bg-matrix-bg border border-matrix-border rounded px-1 py-0.5 text-[10px] text-matrix-muted focus:outline-none cursor-pointer"
-                            >
-                              <option value="low">{t('low', language)}</option>
-                              <option value="medium">{t('medium', language)}</option>
-                              <option value="high">{t('high', language)}</option>
-                              <option value="urgent">{t('urgent', language)}</option>
-                            </select>
+                              options={[
+                                { value: 'low', label: t('low', language) },
+                                { value: 'medium', label: t('medium', language) },
+                                { value: 'high', label: t('high', language) },
+                                { value: 'urgent', label: t('urgent', language) },
+                              ]}
+                              className="hidden group-hover:inline w-20"
+                            />
                             <span
                               className={`text-[10px] font-medium ${priorityDots[task.priority].replace('bg-', 'text-')} group-hover:hidden`}
                             >

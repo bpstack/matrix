@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 
 interface CalendarProps {
   value: string;
@@ -25,7 +25,9 @@ const MONTHS = [
 export function Calendar({ value, onChange, className }: CalendarProps) {
   const [open, setOpen] = useState(false);
   const [viewDate, setViewDate] = useState(() => (value ? new Date(value + 'T00:00:00') : new Date()));
+  const [position, setPosition] = useState<{ top: number; left: number } | null>(null);
   const ref = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
 
   const selectedDate = value ? new Date(value + 'T00:00:00') : null;
 
@@ -37,6 +39,29 @@ export function Calendar({ value, onChange, className }: CalendarProps) {
     document.addEventListener('mousedown', close);
     return () => document.removeEventListener('mousedown', close);
   }, [open]);
+
+  const updatePosition = useCallback(() => {
+    if (buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      const calendarWidth = 240;
+      const buttonCenter = rect.left + rect.width / 2;
+      const openLeftward = buttonCenter > window.innerWidth / 2;
+      const left = openLeftward ? rect.right - calendarWidth : rect.left;
+      setPosition({ top: rect.bottom + 4, left });
+    }
+  }, []);
+
+  useEffect(() => {
+    if (open) {
+      updatePosition();
+      window.addEventListener('scroll', updatePosition, true);
+      window.addEventListener('resize', updatePosition);
+    }
+    return () => {
+      window.removeEventListener('scroll', updatePosition, true);
+      window.removeEventListener('resize', updatePosition);
+    };
+  }, [open, updatePosition]);
 
   const getDaysInMonth = (date: Date) => {
     const year = date.getFullYear();
@@ -96,7 +121,11 @@ export function Calendar({ value, onChange, className }: CalendarProps) {
     <div ref={ref} className={`relative ${className || ''}`}>
       <button
         type="button"
-        onClick={() => setOpen(!open)}
+        ref={buttonRef}
+        onClick={() => {
+          setOpen(!open);
+          if (!open) setTimeout(updatePosition, 0);
+        }}
         className="w-full flex items-center justify-between gap-2 bg-matrix-bg border border-matrix-border rounded px-3 py-1.5 text-sm text-gray-400 hover:border-matrix-accent/30 focus:outline-none focus:border-matrix-accent/50 transition-colors"
       >
         <span className="truncate">{displayValue || 'Select date'}</span>
@@ -115,8 +144,11 @@ export function Calendar({ value, onChange, className }: CalendarProps) {
         </svg>
       </button>
 
-      {open && (
-        <div className="absolute z-50 mt-1 right-0 bg-matrix-surface border border-matrix-border rounded-lg shadow-lg p-3 w-[240px]">
+      {open && position && (
+        <div
+          className="fixed z-50 mt-1 bg-matrix-surface border border-matrix-border rounded-lg shadow-lg p-3 w-[240px]"
+          style={{ top: position.top, left: position.left }}
+        >
           <div className="flex items-center justify-between mb-2">
             <button
               type="button"
